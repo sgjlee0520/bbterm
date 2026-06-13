@@ -15,3 +15,9 @@ def test_no_key_uses_yfinance_for_bars(tmp_path):
     svc = build_service(_config(tmp_path))
     assert svc._bars.name == "yfinance"
     assert svc._quotes.name == "yfinance"
+
+
+def test_key_present_uses_databento_for_bars(tmp_path):
+    svc = build_service(_config(tmp_path, key="db-test-key"))
+    assert svc._bars.name == "databento"
+    assert svc._quotes.name == "yfinance"  # quotes stay on free fallback

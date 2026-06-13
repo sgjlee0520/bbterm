@@ -64,6 +64,25 @@ async def test_fetch_ttl_suppresses_repeated_forward_fetch():
     assert fake.bar_calls == []  # within TTL: don't re-ask for newer data
 
 
+async def test_midnight_bars_with_intraday_query_bounds_no_inverted_gap():
+    # Regression: daily bars land at midnight, but query bounds carry a
+    # time-of-day. A second call must not emit an inverted (start > end) gap.
+    bars = make_bars(start=datetime(2026, 1, 5), n=5)  # ts at 00:00
+    store = Store(":memory:")
+    fake = FakeProvider(bars=bars)
+    svc = DataService(store, fake, fake, fetch_ttl=0.0)
+
+    q_start = datetime(2026, 1, 4, 22, 44)  # just before first cached bar
+    q_end = datetime(2026, 1, 9, 22, 44)
+    await svc.get_bars("AAPL", "1d", q_start, q_end)
+    fake.bar_calls.clear()
+
+    got = await svc.get_bars("AAPL", "1d", q_start, q_end)  # must not raise
+    assert len(got) == 5
+    for _, _, gap_start, gap_end in fake.bar_calls:
+        assert gap_start < gap_end  # never inverted
+
+
 async def test_get_quote_passthrough():
     svc, fake = make_service(quote=Quote("AAPL", 110.0, 100.0))
     q = await svc.get_quote("AAPL")

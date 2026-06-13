@@ -36,12 +36,16 @@ class DataService:
         gaps: list[tuple[datetime, datetime]] = []
         if coverage is None:
             gaps.append((start, end))
-        else:
+        elif not self._recently_fetched(symbol, interval):
             lo, hi = coverage
             if start < lo:
                 gaps.append((start, lo - _step(interval)))
-            if end > hi and not self._recently_fetched(symbol, interval):
+            if end > hi:
                 gaps.append((hi + _step(interval), end))
+        # Daily bars are timestamped at midnight while query bounds carry a
+        # time-of-day, so a gap can collapse to an inverted/sub-step range the
+        # provider rejects. Drop any gap that isn't a forward span.
+        gaps = [(s, e) for s, e in gaps if s < e]
         for gap_start, gap_end in gaps:
             fetched = await asyncio.to_thread(
                 self._bars.get_bars, symbol, interval, gap_start, gap_end

@@ -1,5 +1,0 @@
-textual>=0.47.0
-yfinance>=0.2.36
-plotext>=5.2.8
-duckdb>=0.9.0
-pandas>=2.0.0

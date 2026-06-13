@@ -1,7 +1,7 @@
 # Terminal Rebuild Design — Local Market Terminal on Databento + DuckDB
 
 **Date:** 2026-06-12
-**Status:** Draft, awaiting user review
+**Status:** Phases 1–2 implemented and verified (2026-06-12). Phase 3 pending.
 
 ## Goals and constraints
 

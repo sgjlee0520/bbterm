@@ -93,7 +93,17 @@ class BloombergApp(App):
             )
         except CostCapExceeded as err:
             self.notify(str(err), severity="error", title="Cost cap")
-            return
+            bars = self.service.store.get_bars(
+                self.current_symbol, interval, start, end
+            )
+        except Exception as err:
+            self.notify(
+                f"Fetch failed ({err}); showing cached data",
+                severity="warning", title="Stale data",
+            )
+            bars = self.service.store.get_bars(
+                self.current_symbol, interval, start, end
+            )
         quote = await self.service.get_quote(self.current_symbol)
         self.query_one(ChartPanel).show(self.current_symbol, label, bars, quote)
 

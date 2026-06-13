@@ -1,0 +1,2 @@
+[console_scripts]
+bbterm = bbterm.tui.app:main

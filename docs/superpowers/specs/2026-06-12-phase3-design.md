@@ -21,6 +21,11 @@ OHLCV bars, so no credits are spent and no licensing problem is reintroduced.
 - **Persisted watchlist editing** via `ADD`/`DEL` (uses existing
   `Store.set_watchlist`).
 
+- **User guide:** a LaTeX manual (`docs/manual/bbterm-guide.tex`) compiled to
+  PDF, written for someone who has never used a Bloomberg terminal — explains
+  the layout, the command bar and `:` focus model, every command, the
+  chart/stats views, and how to run `bbterm` and `bbterm-sync`.
+
 Out of scope: fundamentals/news, fuzzy symbol search, multiple chart overlays.
 
 ## Layout & navigation
@@ -134,6 +139,26 @@ synced). Candlesticks use the bars already loaded for the selected period.
   switcher shows `StatsView`; submit `GP` and assert it shows `ChartPanel`;
   press `c` and assert the chart mode flips. Uses the fake provider — no
   network, no credits.
+
+## User guide deliverable
+
+Written last, once the features are final so it documents real behavior. Lives
+in `docs/manual/bbterm-guide.tex`, compiled with `pdflatex` (full TeX Live is
+installed) to `docs/manual/bbterm-guide.pdf`. Audience: a first-time terminal
+user. Contents:
+
+- What bbterm is and the local/low-cost data model (Databento + cache).
+- Screen layout walkthrough (watchlist, chart/stats panel, ticker strip,
+  command bar) with an annotated ASCII diagram.
+- The command bar and the `:` focus model explained from scratch, plus `Esc`.
+- A command reference table: bare ticker, `ADD`, `DEL`, `GP`, `DES`, `?`.
+- Keyboard shortcuts: `1`–`6` periods, `c` line/candle, `r` refresh, `q` quit.
+- Reading the charts: candlesticks (body, wicks, color) and the volume panel;
+  the stats panel fields.
+- Getting started: install, set `DATABENTO_API_KEY`, `bbterm-sync`, `bbterm`.
+
+A compile step (`pdflatex`, run twice for the table of contents) verifies the
+PDF builds with no errors as the final task of the plan.
 
 ## Alternatives considered
 

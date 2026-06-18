@@ -1,7 +1,7 @@
 # Phase 3 Design — Command Bar, Candlestick Charts, Watchlist Editing
 
 **Date:** 2026-06-12
-**Status:** Draft, awaiting user review
+**Status:** Approved (user added the LaTeX guide deliverable). `pdflatex` verified present (TeX Live 2025).
 **Builds on:** Phases 1–2 (`bbterm` package, async DataService, DuckDB store, Databento + yfinance providers).
 
 ## Goal

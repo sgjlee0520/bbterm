@@ -19,17 +19,20 @@ class ChartPanel(Widget):
     ChartPanel > Static.plot { width: 100%; height: 1fr; }
     """
 
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.mode = "candle"  # or "line"
+        self._last: tuple | None = None  # (symbol, label, bars, quote)
+        self._size_wh: tuple[int, int] | None = None  # test override
+
     def compose(self) -> ComposeResult:
         yield Label("", id="chart-header", classes="header")
         yield Static("", id="chart-plot", classes="plot")
 
     def show(
-        self,
-        symbol: str,
-        period_label: str,
-        bars: list[Bar],
-        quote: Quote | None,
+        self, symbol: str, period_label: str, bars: list[Bar], quote: Quote | None
     ) -> None:
+        self._last = (symbol, period_label, bars, quote)
         header = self.query_one("#chart-header", Label)
         plot = self.query_one("#chart-plot", Static)
 
@@ -48,28 +51,62 @@ class ChartPanel(Widget):
             return
         plot.update(self._build_plot(symbol, period_label, bars, quote))
 
-    def _build_plot(
-        self,
-        symbol: str,
-        period_label: str,
-        bars: list[Bar],
-        quote: Quote | None,
-    ) -> str:
-        width = max(self.size.width - 2, 40)
-        height = max(self.size.height - 3, 10)
+    def toggle_mode(self) -> None:
+        self.mode = "line" if self.mode == "candle" else "candle"
+        if self._last is not None:
+            self.show(*self._last)
 
-        closes = [b.close for b in bars]
-        labels = [str(b.ts.date()) for b in bars]
+    def _dims(self) -> tuple[int, int]:
+        if self._size_wh is not None:
+            return self._size_wh
+        return self.size.width, self.size.height
+
+    def _build_plot(
+        self, symbol: str, period_label: str, bars: list[Bar], quote: Quote | None
+    ) -> str:
+        width_raw, height_raw = self._dims()
+        width = max(width_raw - 2, 40)
+        height = max(height_raw - 3, 10)
+        color = "green" if (quote and quote.is_up) else "red"
+        dates = [b.ts.strftime("%Y-%m-%d") for b in bars]
 
         plt.clear_figure()
         plt.theme("dark")
-        plt.plotsize(width, height)
-        color = "green" if (quote and quote.is_up) else "red"
-        plt.plot(closes, color=color, label=symbol)
 
-        tick_count = min(6, len(labels))
-        step = max(1, len(labels) // tick_count)
-        ticks = list(range(0, len(labels), step))
-        plt.xticks(ticks, [labels[i] for i in ticks])
+        if self.mode == "line":
+            plt.plotsize(width, height)
+            plt.plot([b.close for b in bars], color=color, label=symbol)
+            self._apply_xticks(dates)
+            plt.title(f"{symbol} — {period_label} (line)")
+            return plt.build()
+
+        # candle + volume sub-panel
+        vol_h = max(height // 4, 4)
+        candle_h = max(height - vol_h, 8)
+        plt.subplots(2, 1)
+        plt.subplot(1, 1)
+        plt.plotsize(width, candle_h)
+        plt.date_form("Y-m-d")
+        plt.candlestick(
+            dates,
+            {
+                "Open": [b.open for b in bars],
+                "High": [b.high for b in bars],
+                "Low": [b.low for b in bars],
+                "Close": [b.close for b in bars],
+            },
+        )
         plt.title(f"{symbol} — {period_label}")
+        plt.subplot(2, 1)
+        plt.plotsize(width, vol_h)
+        plt.bar(dates, [b.volume for b in bars], color=color)
+        plt.title("Volume")
         return plt.build()
+
+    def _apply_xticks(self, dates: list[str]) -> None:
+        tick_count = min(6, len(dates))
+        if tick_count == 0:
+            return
+        step = max(1, len(dates) // tick_count)
+        ticks = list(range(0, len(dates), step))
+        plt.xticks(ticks, [dates[i] for i in ticks])

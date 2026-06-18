@@ -4,3 +4,8 @@ __pycache__/
 data/*.duckdb
 .env
 *.egg-info/
+docs/manual/*.aux
+docs/manual/*.log
+docs/manual/*.out
+docs/manual/*.toc
+docs/manual/*.pdf

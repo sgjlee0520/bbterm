@@ -1,0 +1,112 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyvrb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{parskip}
+\title{bbterm --- A Beginner's Guide to Your Local Market Terminal}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{What bbterm is}
+bbterm is a market terminal you run in your own terminal window. It shows price
+charts, a watchlist of symbols you follow, and a statistics panel. Market data
+comes from Databento and is cached locally in a small database, so the app is
+fast, works offline once data is fetched, and costs almost nothing to run.
+
+\section{Starting the app}
+From the project folder:
+\begin{Verbatim}[frame=single]
+.venv/bin/bbterm-sync     # one-time/daily: download recent daily prices
+.venv/bin/bbterm          # launch the terminal
+\end{Verbatim}
+The first time, set your Databento key in your shell (\texttt{DATABENTO\_API\_KEY}).
+Without it, bbterm still runs using a free fallback data source.
+
+\section{The screen}
+\begin{Verbatim}[frame=single]
++----------------------------------------------+
+| : AAPL_                          (command)   |  <- command bar (top)
++----------+-----------------------------------+
+| WATCHLIST|  AAPL  291.52  -6.48 (-2.18%)     |
+| SPY  ... |  [ chart  OR  statistics ]        |  <- main panel
+| AAPL ... |                                   |
++----------+-----------------------------------+
+| SPY .. | QQQ .. | AAPL ..  (ticker strip)    |
+| [GP]chart [DES]stats [c]line  q  ?=help      |  <- footer
++----------------------------------------------+
+\end{Verbatim}
+\textbf{Watchlist} (left): the symbols you follow, each with price and percent
+change. \textbf{Main panel} (right): either the price chart or the statistics
+view. \textbf{Ticker strip} (bottom): a compact running line of your watchlist.
+
+\section{The command bar and the colon key}
+The command bar is one line at the top where you type instructions instead of
+hunting through menus. Because single keys are also shortcuts (for example
+\texttt{q} quits), the bar is normally ``asleep''. Press \texttt{:} (the colon
+key) to wake it up and move your typing into it. Type your command, press
+\texttt{Enter} to run it, or press \texttt{Esc} to leave the bar without running
+anything. This colon-to-type idea is borrowed from the \texttt{vim} editor.
+
+\section{Commands}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Type this & What happens \\
+\midrule
+\texttt{AAPL} & Load Apple into the main panel \\
+\texttt{ADD TSLA} & Add Tesla to your watchlist (saved) \\
+\texttt{DEL SPY} & Remove SPY from your watchlist (saved) \\
+\texttt{GP} & Show the price chart \\
+\texttt{DES} & Show the statistics panel \\
+\texttt{?} or \texttt{HELP} & Show a reminder of the commands \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Keyboard shortcuts}
+These work when the command bar is \emph{not} focused.
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Key & Action \\
+\midrule
+\texttt{:} & Focus the command bar \\
+\texttt{1}--\texttt{6} & Time range: 1D, 5D, 1M, 6M, 1Y, 5Y \\
+\texttt{c} & Toggle candlestick / line chart \\
+\texttt{r} & Refresh data \\
+\texttt{q} & Quit \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Reading the chart}
+In candlestick mode, each candle is one time period. The thick body spans the
+open and close prices; a green body means the price rose, red means it fell. The
+thin lines (wicks) above and below show the highest and lowest prices reached.
+The bars in the smaller panel below show trading volume. Press \texttt{c} for a
+simpler line of closing prices instead.
+
+\section{Reading the statistics panel (DES)}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Field & Meaning \\
+\midrule
+Last & Most recent price \\
+Change & Price and percent move versus the previous close \\
+52w High / Low & Highest and lowest price over the past year \\
+1M Return & Percent change over about one month \\
+YTD Return & Percent change since January 1st \\
+Avg Vol & Average daily trading volume \\
+Day Range & Today's low and high \\
+\bottomrule
+\end{tabular}
+\end{center}
+All statistics are computed from the price history already on your machine.
+
+\end{document}

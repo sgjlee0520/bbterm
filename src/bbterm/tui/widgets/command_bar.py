@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from textual import events
+from textual.binding import Binding
 from textual.message import Message
 from textual.widgets import Input
 
@@ -13,8 +13,12 @@ class CommandBar(Input):
     CommandBar:focus { background: $accent 20%; }
     """
 
-    class Blurred(Message):
+    # Note: do NOT name this "Blurred" — Input already defines Input.Blurred
+    # and constructs it with positional args internally.
+    class EscapePressed(Message):
         """Posted when the user presses Escape to leave the command bar."""
+
+    BINDINGS = [Binding("escape", "cancel", show=False)]
 
     def __init__(self) -> None:
         super().__init__(
@@ -22,7 +26,5 @@ class CommandBar(Input):
             id="command-bar",
         )
 
-    def _on_key(self, event: events.Key) -> None:
-        if event.key == "escape":
-            event.stop()
-            self.post_message(self.Blurred())
+    def action_cancel(self) -> None:
+        self.post_message(self.EscapePressed())

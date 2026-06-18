@@ -41,6 +41,9 @@ _HELP = (
 
 class BloombergApp(App):
     TITLE = "bbterm"
+    # Disable auto-focus so the CommandBar doesn't grab focus on boot; otherwise
+    # single-key hotkeys (c/q/digits) would be typed into it. ":" focuses it.
+    AUTO_FOCUS = None
     CSS = """
     Screen { background: $surface; }
     #main { height: 1fr; }
@@ -83,10 +86,6 @@ class BloombergApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
-        # Do not let the CommandBar grab initial focus, or single-key hotkeys
-        # (c/q/digits) would be typed into it. With focus cleared, app BINDINGS
-        # handle keys and ":" focuses the bar on demand.
-        self.set_focus(None)
         self.load_chart()
         self.load_quotes()
         self.set_interval(60, self.load_quotes)

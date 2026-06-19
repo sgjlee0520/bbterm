@@ -60,7 +60,8 @@ extractors do the parsing): `FundamentalsProvider.get_facts(symbol) -> dict` and
   `User-Agent: bbterm/0.1 (yagurootajum@gmail.com)` as SEC requires, and a small
   inter-request sleep to respect the ~10 req/sec limit.
 - Ticker→CIK resolution via `https://www.sec.gov/files/company_tickers.json`,
-  fetched once and persisted; zero-padded to 10 digits for API paths.
+  fetched once per session and cached **in memory** (keeps the provider
+  self-contained, no store dependency); zero-padded to 10 digits for API paths.
 - Facts:    `https://data.sec.gov/api/xbrl/companyfacts/CIK{cik10}.json`
 - Filings:  `https://data.sec.gov/submissions/CIK{cik10}.json`
 - Sync provider, called from the service via `asyncio.to_thread`, like the
@@ -83,13 +84,13 @@ extractors do the parsing): `FundamentalsProvider.get_facts(symbol) -> dict` and
 
 ### Store (`data/store.py`)
 
-Three cache tables in the existing `market.duckdb` (raw JSON cached so extraction
-logic can evolve without re-fetching):
+Two cache tables in the existing `market.duckdb` (raw JSON cached so extraction
+logic can evolve without re-fetching). The ticker→CIK map is kept in provider
+memory, not the store.
 
 ```sql
 CREATE TABLE edgar_facts   (symbol VARCHAR PRIMARY KEY, fetched_at TIMESTAMP, json VARCHAR);
 CREATE TABLE edgar_filings (symbol VARCHAR PRIMARY KEY, fetched_at TIMESTAMP, json VARCHAR);
-CREATE TABLE cik_map       (symbol VARCHAR PRIMARY KEY, cik VARCHAR);
 ```
 
 Getter/setter methods mirror the existing bar/watchlist accessors.

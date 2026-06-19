@@ -11,10 +11,27 @@ from bbterm.tui.widgets.command_bar import CommandBar
 from fakes import FakeProvider, make_bars
 
 
+class FakeEdgar:
+    name = "edgar"
+
+    def get_facts(self, symbol):
+        return {"cik": 1, "facts": {"us-gaap": {"Revenues": {"units": {"USD": [
+            {"end": "2023-12-31", "val": 100, "fy": 2023, "fp": "FY"},
+        ]}}}}}
+
+    def get_submissions(self, symbol):
+        return {"cik": 1, "filings": {"recent": {
+            "accessionNumber": ["0000000001-24-000001"],
+            "filingDate": ["2024-01-15"], "reportDate": ["2023-12-31"],
+            "form": ["10-K"], "primaryDocument": ["x.htm"],
+        }}}
+
+
 def _app():
     bars = make_bars("SPY", "1d", start=datetime.now() - timedelta(days=400), n=300)
     fake = FakeProvider(bars=bars, quote=Quote("SPY", 101.0, 100.0))
-    service = DataService(Store(":memory:"), fake, fake, fetch_ttl=0.0)
+    service = DataService(Store(":memory:"), fake, fake, fetch_ttl=0.0,
+                          edgar_provider=FakeEdgar())
     return BloombergApp(service=service, watchlist=["SPY"]), service
 
 
@@ -65,3 +82,17 @@ async def test_cannot_remove_last_symbol():
     async with app.run_test() as pilot:
         await _submit(pilot, app, "DEL SPY")
         assert app.watchlist_symbols == ["SPY"]
+
+
+async def test_fa_switches_to_fundamentals_view():
+    app, _ = _app()
+    async with app.run_test() as pilot:
+        await _submit(pilot, app, "FA")
+        assert app.query_one(ContentSwitcher).current == "fundamentals"
+
+
+async def test_fil_switches_to_filings_view():
+    app, _ = _app()
+    async with app.run_test() as pilot:
+        await _submit(pilot, app, "FIL")
+        assert app.query_one(ContentSwitcher).current == "filings"

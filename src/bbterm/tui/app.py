@@ -9,8 +9,8 @@ from textual.containers import Horizontal
 from textual.widgets import ContentSwitcher, Footer, Header
 
 from bbterm.commands import (
-    AddSymbol, Help, LoadSymbol, RemoveSymbol, ShowChart, ShowStats, Unknown,
-    parse_command,
+    AddSymbol, Help, LoadSymbol, RemoveSymbol, ShowChart, ShowFilings,
+    ShowFundamentals, ShowStats, Unknown, parse_command,
 )
 from bbterm.config import load_config
 from bbterm.data import build_service
@@ -19,6 +19,8 @@ from bbterm.data.service import DataService
 from bbterm.data.stats import compute_stats
 from bbterm.tui.widgets.chart import ChartPanel
 from bbterm.tui.widgets.command_bar import CommandBar
+from bbterm.tui.widgets.filings import FilingsView
+from bbterm.tui.widgets.fundamentals import FundamentalsView
 from bbterm.tui.widgets.stats import StatsView
 from bbterm.tui.widgets.strip import TickerStrip
 from bbterm.tui.widgets.watchlist import Watchlist
@@ -33,8 +35,8 @@ PERIODS: dict[str, tuple[str, timedelta, str]] = {
 }
 
 _HELP = (
-    "Commands: <ticker> load · ADD <sym> · DEL <sym> · "
-    "GP chart · DES stats · ? help   |   Keys: :=command 1-6=period "
+    "Commands: <ticker> load · ADD <sym> · DEL <sym> · GP chart · DES stats · "
+    "FA fundamentals · FIL filings · ? help   |   Keys: :=command 1-6=period "
     "c=line/candle r=refresh q=quit"
 )
 
@@ -82,6 +84,8 @@ class BloombergApp(App):
             with ContentSwitcher(initial="chart", id="switcher"):
                 yield ChartPanel(id="chart")
                 yield StatsView(id="stats")
+                yield FundamentalsView(id="fundamentals")
+                yield FilingsView(id="filings")
         yield TickerStrip()
         yield Footer()
 
@@ -126,6 +130,12 @@ class BloombergApp(App):
         elif isinstance(command, ShowStats):
             self.query_one("#switcher", ContentSwitcher).current = "stats"
             self.load_stats()
+        elif isinstance(command, ShowFundamentals):
+            self.query_one("#switcher", ContentSwitcher).current = "fundamentals"
+            self.load_fundamentals()
+        elif isinstance(command, ShowFilings):
+            self.query_one("#switcher", ContentSwitcher).current = "filings"
+            self.load_filings()
         elif isinstance(command, Help):
             self.notify(_HELP, title="Help", timeout=8)
         elif isinstance(command, Unknown):
@@ -156,8 +166,13 @@ class BloombergApp(App):
         self.load_quotes()
 
     def _refresh_active_view(self) -> None:
-        if self.query_one("#switcher", ContentSwitcher).current == "stats":
+        current = self.query_one("#switcher", ContentSwitcher).current
+        if current == "stats":
             self.load_stats()
+        elif current == "fundamentals":
+            self.load_fundamentals()
+        elif current == "filings":
+            self.load_filings()
         else:
             self.load_chart()
 
@@ -208,6 +223,24 @@ class BloombergApp(App):
         bars = await self._bars_for("1d", timedelta(days=365))
         quote = await self.service.get_quote(self.current_symbol)
         self.query_one(StatsView).show(compute_stats(bars, quote))
+
+    @work(exclusive=True, group="fundamentals")
+    async def load_fundamentals(self) -> None:
+        try:
+            metrics = await self.service.get_fundamentals(self.current_symbol)
+        except Exception as err:
+            self.notify(f"EDGAR unavailable ({err})", severity="warning")
+            metrics = []
+        self.query_one(FundamentalsView).show(metrics)
+
+    @work(exclusive=True, group="filings")
+    async def load_filings(self) -> None:
+        try:
+            filings = await self.service.get_filings(self.current_symbol)
+        except Exception as err:
+            self.notify(f"EDGAR unavailable ({err})", severity="warning")
+            filings = []
+        self.query_one(FilingsView).show(filings)
 
     @work(exclusive=True, group="quotes")
     async def load_quotes(self) -> None:

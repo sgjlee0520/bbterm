@@ -27,3 +27,15 @@ class QuoteProvider(Protocol):
     name: str
 
     def get_quote(self, symbol: str) -> Quote | None: ...
+
+
+class FundamentalsProvider(Protocol):
+    name: str
+
+    def get_facts(self, symbol: str) -> dict: ...
+
+
+class FilingsProvider(Protocol):
+    name: str
+
+    def get_submissions(self, symbol: str) -> dict: ...

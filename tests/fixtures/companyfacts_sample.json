@@ -1,0 +1,53 @@
+{
+  "cik": 320193,
+  "entityName": "Apple Inc.",
+  "facts": {
+    "us-gaap": {
+      "Revenues": {
+        "units": {
+          "USD": [
+            {"end": "2022-09-24", "val": 365817000000, "fy": 2022, "fp": "FY", "form": "10-K"},
+            {"end": "2023-09-30", "val": 383285000000, "fy": 2023, "fp": "FY", "form": "10-K"},
+            {"end": "2023-12-30", "val": 119575000000, "fy": 2024, "fp": "Q1", "form": "10-Q"}
+          ]
+        }
+      },
+      "NetIncomeLoss": {
+        "units": {
+          "USD": [
+            {"end": "2022-09-24", "val": 99803000000, "fy": 2022, "fp": "FY", "form": "10-K"},
+            {"end": "2023-09-30", "val": 96995000000, "fy": 2023, "fp": "FY", "form": "10-K"}
+          ]
+        }
+      },
+      "EarningsPerShareDiluted": {
+        "units": {
+          "USD/shares": [
+            {"end": "2023-09-30", "val": 6.13, "fy": 2023, "fp": "FY", "form": "10-K"}
+          ]
+        }
+      },
+      "Assets": {
+        "units": {
+          "USD": [
+            {"end": "2023-09-30", "val": 352583000000, "fy": 2023, "fp": "FY", "form": "10-K"}
+          ]
+        }
+      },
+      "CommonStockSharesOutstanding": {
+        "units": {
+          "shares": [
+            {"end": "2023-09-30", "val": 15550061000, "fy": 2023, "fp": "FY", "form": "10-K"}
+          ]
+        }
+      },
+      "Goodwill": {
+        "units": {
+          "USD": [
+            {"end": "2023-09-30", "val": 0, "fy": 2023, "fp": "FY", "form": "10-K"}
+          ]
+        }
+      }
+    }
+  }
+}

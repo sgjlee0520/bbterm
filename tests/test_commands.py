@@ -34,3 +34,15 @@ def test_parse_known_forms(text, expected):
 def test_parse_unknown_or_empty(text):
     result = parse_command(text)
     assert isinstance(result, Unknown)
+
+
+from bbterm.commands import ShowFilings, ShowFundamentals
+
+
+def test_fa_parses_to_show_fundamentals():
+    assert isinstance(parse_command("FA"), ShowFundamentals)
+    assert isinstance(parse_command("fa"), ShowFundamentals)
+
+
+def test_fil_parses_to_show_filings():
+    assert isinstance(parse_command("FIL"), ShowFilings)

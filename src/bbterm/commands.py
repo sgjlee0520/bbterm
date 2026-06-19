@@ -32,6 +32,16 @@ class ShowStats:
 
 
 @dataclass(frozen=True)
+class ShowFundamentals:
+    pass
+
+
+@dataclass(frozen=True)
+class ShowFilings:
+    pass
+
+
+@dataclass(frozen=True)
 class Help:
     pass
 
@@ -61,6 +71,10 @@ def parse_command(text: str):
         return ShowChart()
     if verb == "DES":
         return ShowStats()
+    if verb == "FA":
+        return ShowFundamentals()
+    if verb == "FIL":
+        return ShowFilings()
     if verb in ("?", "HELP"):
         return Help()
     if arg is None and _is_symbol(verb):

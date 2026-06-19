@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 
 @dataclass(frozen=True)
@@ -41,3 +41,23 @@ class Quote:
     def change_str(self) -> str:
         sign = "+" if self.change >= 0 else ""
         return f"{sign}{self.change:.2f} ({sign}{self.pct_change:.2f}%)"
+
+
+@dataclass(frozen=True)
+class FundamentalMetric:
+    label: str
+    value: float
+    unit: str
+    period_end: date
+    fy: int
+    fp: str
+    yoy_pct: float | None
+
+
+@dataclass(frozen=True)
+class Filing:
+    form: str
+    filed_date: date
+    period: str
+    accession: str
+    url: str

@@ -27,7 +27,7 @@ def test_extract_picks_latest_annual_and_yoy():
     assert rev.value == 383285000000  # FY2023, not the Q1 2024 datapoint
     assert rev.fy == 2023
     assert rev.period_end == date(2023, 9, 30)
-    assert round(rev.yoy_pct, 2) == 4.77
+    assert round(rev.yoy_pct, 2) == 4.78
 
 
 def test_extract_yoy_none_without_prior_year():

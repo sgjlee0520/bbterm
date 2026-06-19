@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from datetime import datetime, timedelta
 
-from bbterm.data.models import Bar, Quote
+from bbterm.data.fundamentals import extract_fundamentals, parse_filings
+from bbterm.data.models import Bar, Filing, FundamentalMetric, Quote
 from bbterm.data.providers.base import BarProvider, QuoteProvider
 from bbterm.data.store import Store
 
 FETCH_TTL_SECONDS = 300.0
+EDGAR_TTL_SECONDS = 86400.0
 
 
 def _step(interval: str) -> timedelta:
@@ -22,11 +25,13 @@ class DataService:
         bar_provider: BarProvider,
         quote_provider: QuoteProvider,
         fetch_ttl: float = FETCH_TTL_SECONDS,
+        edgar_provider=None,
     ) -> None:
         self.store = store
         self._bars = bar_provider
         self._quotes = quote_provider
         self._ttl = fetch_ttl
+        self._edgar = edgar_provider
         self._last_fetch: dict[tuple[str, str], float] = {}
 
     async def get_bars(
@@ -62,3 +67,36 @@ class DataService:
             return False
         last = self._last_fetch.get((symbol, interval))
         return last is not None and (time.monotonic() - last) < self._ttl
+
+    # ---- EDGAR fundamentals / filings -------------------------------------
+    def _edgar_fresh(self, cached) -> bool:
+        if cached is None:
+            return False
+        fetched_at, _ = cached
+        return (datetime.now() - fetched_at).total_seconds() < EDGAR_TTL_SECONDS
+
+    async def get_fundamentals(self, symbol: str) -> list[FundamentalMetric]:
+        cached = self.store.get_edgar_facts(symbol)
+        if not self._edgar_fresh(cached):
+            try:
+                facts = await asyncio.to_thread(self._edgar.get_facts, symbol)
+                self.store.set_edgar_facts(symbol, json.dumps(facts))
+                cached = self.store.get_edgar_facts(symbol)
+            except Exception:
+                if cached is None:
+                    raise
+        _, payload = cached
+        return extract_fundamentals(json.loads(payload))
+
+    async def get_filings(self, symbol: str) -> list[Filing]:
+        cached = self.store.get_edgar_filings(symbol)
+        if not self._edgar_fresh(cached):
+            try:
+                subs = await asyncio.to_thread(self._edgar.get_submissions, symbol)
+                self.store.set_edgar_filings(symbol, json.dumps(subs))
+                cached = self.store.get_edgar_filings(symbol)
+            except Exception:
+                if cached is None:
+                    raise
+        _, payload = cached
+        return parse_filings(json.loads(payload))

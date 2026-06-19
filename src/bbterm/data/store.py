@@ -35,6 +35,20 @@ class Store:
             )
             """
         )
+        self._con.execute(
+            """
+            CREATE TABLE IF NOT EXISTS edgar_facts (
+                symbol VARCHAR PRIMARY KEY, fetched_at TIMESTAMP, json VARCHAR
+            )
+            """
+        )
+        self._con.execute(
+            """
+            CREATE TABLE IF NOT EXISTS edgar_filings (
+                symbol VARCHAR PRIMARY KEY, fetched_at TIMESTAMP, json VARCHAR
+            )
+            """
+        )
 
     def upsert_bars(self, bars: list[Bar]) -> None:
         if not bars:
@@ -85,6 +99,32 @@ class Store:
         self._con.execute("DELETE FROM watchlist")
         self._con.executemany(
             "INSERT INTO watchlist VALUES (?, ?)", list(enumerate(symbols))
+        )
+
+    def get_edgar_facts(self, symbol: str) -> tuple[datetime, str] | None:
+        return self._get_edgar("edgar_facts", symbol)
+
+    def set_edgar_facts(self, symbol: str, json_str: str) -> None:
+        self._set_edgar("edgar_facts", symbol, json_str)
+
+    def get_edgar_filings(self, symbol: str) -> tuple[datetime, str] | None:
+        return self._get_edgar("edgar_filings", symbol)
+
+    def set_edgar_filings(self, symbol: str, json_str: str) -> None:
+        self._set_edgar("edgar_filings", symbol, json_str)
+
+    def _get_edgar(self, table: str, symbol: str) -> tuple[datetime, str] | None:
+        row = self._con.execute(
+            f"SELECT fetched_at, json FROM {table} WHERE symbol = ?", [symbol]
+        ).fetchone()
+        if row is None:
+            return None
+        return row[0], row[1]
+
+    def _set_edgar(self, table: str, symbol: str, json_str: str) -> None:
+        self._con.execute(
+            f"INSERT OR REPLACE INTO {table} VALUES (?, ?, ?)",
+            [symbol, datetime.now(), json_str],
         )
 
     def close(self) -> None:

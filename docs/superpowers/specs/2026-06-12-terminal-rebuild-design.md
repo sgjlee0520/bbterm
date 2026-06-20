@@ -1,7 +1,9 @@
 # Terminal Rebuild Design — Local Market Terminal on Databento + DuckDB
 
 **Date:** 2026-06-12
-**Status:** Phases 1–2 implemented and verified (2026-06-12). Phase 3 pending.
+**Status:** Phases 1–4 implemented and verified. Phases 1–2 (2026-06-12),
+Phase 3 — command bar, candlestick charts, watchlist editing (2026-06-17),
+Phase 4 — SEC EDGAR fundamentals & filings (2026-06-18).
 
 ## Goals and constraints
 
@@ -91,9 +93,11 @@ only. Startup shows cached data immediately, then refreshes in the background.
    end-of-day sync command for the watchlist.
 3. **Terminal features:** Bloomberg-style command bar (`AAPL G`, `AAPL DES`,
    watchlist add/remove), candlestick + volume charts, persisted watchlists.
-4. **Later (business track):** fundamentals via SEC EDGAR (free), news,
-   packaging/distribution, and only then evaluate a web UI and redistribution
-   licensing — out of scope for this spec.
+4. **EDGAR (business track, shipped 2026-06-18):** fundamentals & filings via
+   SEC EDGAR (free, commercially usable). See the Phase 4 design doc.
+5. **Still ahead (business track):** packaging/distribution, a license-safe news
+   wire, and only then evaluate a web UI and redistribution licensing — out of
+   scope for this spec.
 
 ## Alternatives considered
 

@@ -48,10 +48,25 @@ All parsing and number-crunching lives in pure, unit-tested modules
 
 ## Install
 
+End users (isolated install via [pipx](https://pipx.pypa.io/)):
+
+```bash
+pipx install git+https://github.com/sgjlee0520/bbterm.git
+```
+
+The core install runs on the free yfinance + SEC EDGAR path. To enable the
+Databento provider (requires a `DATABENTO_API_KEY`):
+
+```bash
+pipx install "git+https://github.com/sgjlee0520/bbterm.git#egg=bbterm[databento]"
+```
+
+Contributors (editable, from a clone):
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev]"          # add ,databento to work on the Databento provider
 ```
 
 ## Configure
@@ -103,3 +118,8 @@ exercised only by the manual scripts under `scripts/`.
   fallback only.
 - SEC EDGAR requests send a declared `User-Agent` with a contact address, as the
   SEC requires.
+
+## License
+
+bbterm is licensed under the **GNU Affero General Public License v3.0 or later**
+(AGPL-3.0-or-later). See [`LICENSE`](LICENSE). Copyright © 2026 sgjlee0520.

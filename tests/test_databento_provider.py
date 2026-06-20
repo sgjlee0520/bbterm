@@ -3,6 +3,8 @@ from datetime import datetime
 import pandas as pd
 import pytest
 
+pytest.importorskip("databento")  # optional extra; skip module when not installed
+
 from bbterm.data.providers.base import CostCapExceeded
 from bbterm.data.providers.databento_ import DatabentoProvider
 

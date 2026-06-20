@@ -51,7 +51,7 @@ class Proof(App):
                else "(NO graphics protocol — will look blocky)")
             + "   ·  press q to quit"
         )
-        yield Image(_sample_png())
+        yield Image(io.BytesIO(_sample_png()))
 
 
 if __name__ == "__main__":

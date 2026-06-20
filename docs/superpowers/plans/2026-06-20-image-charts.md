@@ -291,9 +291,11 @@ Expected: FAIL — `ChartPanel` has no `_render_candle`.
 
 - [ ] **Step 3: Update `ChartPanel`**
 
-In `src/bbterm/tui/widgets/chart.py`, update imports at the top:
+In `src/bbterm/tui/widgets/chart.py`, update imports at the top (note `import io`):
 
 ```python
+import io
+
 from textual_image.widget import Image
 
 from bbterm.tui.widgets.chart_image import image_charts_available, render_candles_png
@@ -328,7 +330,9 @@ header block, starting at `if not bars:`) with:
         png = self._render_candle(symbol, period_label, bars, quote)
         image = self.query_one("#chart-image", Image)
         if png is not None:
-            image.image = png
+            # textual-image treats raw bytes as a file PATH; wrap in BytesIO so it
+            # reads the PNG data.
+            image.image = io.BytesIO(png)
             image.display = True
             plot.display = False
         else:

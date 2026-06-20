@@ -1,9 +1,12 @@
+import importlib.util
 import sys
 
 import pytest
 
 from bbterm.config import Config
 from bbterm.data import build_service
+
+databento_installed = importlib.util.find_spec("databento") is not None
 
 
 def _config(tmp_path, key=None):
@@ -21,6 +24,9 @@ def test_no_key_uses_yfinance_for_bars(tmp_path):
     assert svc._quotes.name == "yfinance"
 
 
+@pytest.mark.skipif(
+    not databento_installed, reason="databento extra not installed"
+)
 def test_key_present_uses_databento_for_bars(tmp_path):
     svc = build_service(_config(tmp_path, key="db-test-key"))
     assert svc._bars.name == "databento"

@@ -39,3 +39,14 @@ def test_toggle_mode_flips():
     assert panel.mode == "line"
     panel.toggle_mode()
     assert panel.mode == "candle"
+
+
+def test_show_uses_text_when_images_unavailable(monkeypatch):
+    import bbterm.tui.widgets.chart as chart_mod
+
+    monkeypatch.setattr(chart_mod, "image_charts_available", lambda: False)
+    panel = ChartPanel()
+    panel._size_wh = (80, 24)
+    # _render_candle returns None (text path) when images are unavailable
+    out = panel._render_candle("AAPL", "1 Month", _bars(), Quote("AAPL", 110, 100))
+    assert out is None

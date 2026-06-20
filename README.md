@@ -106,11 +106,15 @@ bbterm          # launch the terminal
 | `:` | Focus the command bar (`Esc` / `Enter` to leave) |
 | `<ticker>` | Load a symbol |
 | `ADD <sym>` / `DEL <sym>` | Edit the watchlist (saved) |
-| `GP` / `DES` | Chart / statistics |
-| `FA` / `FIL` | Fundamentals / recent SEC filings |
+| `GP` / `DES` | Candlestick chart (crisp image in iTerm2) / statistics |
+| `FA` / `FIL` | Fundamentals / SEC filings (↑↓ select, Enter opens in browser) |
+| `N` | News headlines |
 | `c` | Toggle candlestick / line chart |
 | `1`–`6` | Time range (1D / 5D / 1M / 6M / 1Y / 5Y) |
 | `r` | Refresh · `q` Quit · `?` Help |
+
+Image charts use Sixel/Kitty terminal graphics; on terminals without image
+support, bbterm falls back to text charts automatically.
 
 A beginner-friendly guide is in `docs/manual/bbterm-guide.tex`
 (build the PDF with `pdflatex bbterm-guide.tex`).

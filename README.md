@@ -1,5 +1,7 @@
 # bbterm
 
+<img width="4128" height="1024" alt="Gemini_Generated_Image_8zz0hr8zz0hr8zz0" src="https://github.com/user-attachments/assets/1021302c-5323-4265-a2be-3c1f78cd30fc" />
+
 A local, keyboard-driven market terminal — a Bloomberg-style TUI you run in your
 own terminal. Price charts, a watchlist, statistics, and SEC EDGAR fundamentals
 and filings, all backed by a local cache so it's fast, works offline once data is

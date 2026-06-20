@@ -39,7 +39,7 @@ PERIODS: dict[str, tuple[str, timedelta, str]] = {
 
 _HELP = (
     "Commands: <ticker> load · ADD <sym> · DEL <sym> · GP chart · DES stats · "
-    "FA fundamentals · FIL filings · N news · ? help   |   Keys: :=command 1-6=period "
+    "FA fundamentals · FIL filings (Enter opens) · N news · ? help   |   Keys: :=command 1-6=period "
     "c=line/candle r=refresh q=quit"
 )
 
@@ -140,6 +140,7 @@ class BloombergApp(App):
         elif isinstance(command, ShowFilings):
             self.query_one("#switcher", ContentSwitcher).current = "filings"
             self.load_filings()
+            self.query_one(FilingsView).query_one("OptionList").focus()
         elif isinstance(command, ShowNews):
             self.query_one("#switcher", ContentSwitcher).current = "news"
             self.load_news()

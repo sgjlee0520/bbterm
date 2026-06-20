@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 from datetime import datetime, timedelta
 
 from textual import work
@@ -8,6 +9,7 @@ from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.widgets import ContentSwitcher, Footer, Header
 
+from bbterm import __version__
 from bbterm.commands import (
     AddSymbol, Help, LoadSymbol, RemoveSymbol, ShowChart, ShowFilings,
     ShowFundamentals, ShowStats, Unknown, parse_command,
@@ -253,7 +255,15 @@ class BloombergApp(App):
         self.query_one(TickerStrip).show(quotes)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(
+        prog="bbterm",
+        description="A local, keyboard-driven Bloomberg-style market terminal.",
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"bbterm {__version__}"
+    )
+    parser.parse_args(argv)
     BloombergApp().run()
 
 

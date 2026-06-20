@@ -27,11 +27,23 @@ class FakeEdgar:
         }}}
 
 
+class FakeNews:
+    name = "news"
+
+    def get_news(self, symbol):
+        return (
+            b'<?xml version="1.0"?><rss version="2.0"><channel>'
+            b"<item><title>Hi - X</title><link>http://x</link>"
+            b"<pubDate>Wed, 18 Jun 2025 14:30:00 GMT</pubDate>"
+            b'<source url="http://x">X</source></item></channel></rss>'
+        )
+
+
 def _app():
     bars = make_bars("SPY", "1d", start=datetime.now() - timedelta(days=400), n=300)
     fake = FakeProvider(bars=bars, quote=Quote("SPY", 101.0, 100.0))
     service = DataService(Store(":memory:"), fake, fake, fetch_ttl=0.0,
-                          edgar_provider=FakeEdgar())
+                          edgar_provider=FakeEdgar(), news_provider=FakeNews())
     return BloombergApp(service=service, watchlist=["SPY"]), service
 
 
@@ -96,3 +108,10 @@ async def test_fil_switches_to_filings_view():
     async with app.run_test() as pilot:
         await _submit(pilot, app, "FIL")
         assert app.query_one(ContentSwitcher).current == "filings"
+
+
+async def test_n_switches_to_news_view():
+    app, _ = _app()
+    async with app.run_test() as pilot:
+        await _submit(pilot, app, "N")
+        assert app.query_one(ContentSwitcher).current == "news"

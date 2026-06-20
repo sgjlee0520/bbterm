@@ -42,6 +42,11 @@ class ShowFilings:
 
 
 @dataclass(frozen=True)
+class ShowNews:
+    pass
+
+
+@dataclass(frozen=True)
 class Help:
     pass
 
@@ -75,6 +80,8 @@ def parse_command(text: str):
         return ShowFundamentals()
     if verb == "FIL":
         return ShowFilings()
+    if verb == "N":
+        return ShowNews()
     if verb in ("?", "HELP"):
         return Help()
     if arg is None and _is_symbol(verb):

@@ -61,3 +61,11 @@ class Filing:
     period: str
     accession: str
     url: str
+
+
+@dataclass(frozen=True)
+class NewsItem:
+    title: str
+    source: str
+    published: datetime | None
+    url: str

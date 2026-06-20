@@ -6,12 +6,14 @@ import time
 from datetime import datetime, timedelta
 
 from bbterm.data.fundamentals import extract_fundamentals, parse_filings
-from bbterm.data.models import Bar, Filing, FundamentalMetric, Quote
+from bbterm.data.models import Bar, Filing, FundamentalMetric, NewsItem, Quote
+from bbterm.data.news import parse_news
 from bbterm.data.providers.base import BarProvider, QuoteProvider
 from bbterm.data.store import Store
 
 FETCH_TTL_SECONDS = 300.0
 EDGAR_TTL_SECONDS = 86400.0
+NEWS_TTL_SECONDS = 900.0
 
 
 def _step(interval: str) -> timedelta:
@@ -26,12 +28,14 @@ class DataService:
         quote_provider: QuoteProvider,
         fetch_ttl: float = FETCH_TTL_SECONDS,
         edgar_provider=None,
+        news_provider=None,
     ) -> None:
         self.store = store
         self._bars = bar_provider
         self._quotes = quote_provider
         self._ttl = fetch_ttl
         self._edgar = edgar_provider
+        self._news = news_provider
         self._last_fetch: dict[tuple[str, str], float] = {}
 
     async def get_bars(
@@ -100,3 +104,24 @@ class DataService:
                     raise
         _, payload = cached
         return parse_filings(json.loads(payload))
+
+    # ---- news -------------------------------------------------------------
+    def _news_fresh(self, cached) -> bool:
+        if cached is None:
+            return False
+        fetched_at, _ = cached
+        return (datetime.now() - fetched_at).total_seconds() < NEWS_TTL_SECONDS
+
+    async def get_news(self, symbol: str) -> list[NewsItem]:
+        cached = self.store.get_news(symbol)
+        if not self._news_fresh(cached):
+            try:
+                raw = await asyncio.to_thread(self._news.get_news, symbol)
+                self.store.set_news(symbol, raw.decode("utf-8", "replace"))
+                cached = self.store.get_news(symbol)
+            except Exception:
+                pass
+        if cached is None:
+            return []
+        _, payload = cached
+        return parse_news(payload)

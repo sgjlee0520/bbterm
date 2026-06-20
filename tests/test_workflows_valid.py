@@ -20,3 +20,9 @@ def test_release_workflow_triggers_on_version_tags():
     wf = _load("release.yml")
     triggers = wf.get(True, wf.get("on"))
     assert "v*" in triggers["push"]["tags"]
+
+
+def test_testpypi_workflow_is_manual():
+    wf = _load("testpypi.yml")
+    triggers = wf.get(True, wf.get("on"))
+    assert "workflow_dispatch" in triggers

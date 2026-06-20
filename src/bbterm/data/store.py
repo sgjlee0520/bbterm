@@ -49,6 +49,13 @@ class Store:
             )
             """
         )
+        self._con.execute(
+            """
+            CREATE TABLE IF NOT EXISTS news (
+                symbol VARCHAR PRIMARY KEY, fetched_at TIMESTAMP, json VARCHAR
+            )
+            """
+        )
 
     def upsert_bars(self, bars: list[Bar]) -> None:
         if not bars:
@@ -112,6 +119,12 @@ class Store:
 
     def set_edgar_filings(self, symbol: str, json_str: str) -> None:
         self._set_edgar("edgar_filings", symbol, json_str)
+
+    def get_news(self, symbol: str) -> tuple[datetime, str] | None:
+        return self._get_edgar("news", symbol)
+
+    def set_news(self, symbol: str, text: str) -> None:
+        self._set_edgar("news", symbol, text)
 
     def _get_edgar(self, table: str, symbol: str) -> tuple[datetime, str] | None:
         row = self._con.execute(

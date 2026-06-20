@@ -1,6 +1,6 @@
 [project]
-name = "bbterm"
-version = "0.1.0"
+name = "bbterm-tui"
+version = "0.1.1"
 description = "A local, keyboard-driven Bloomberg-style market terminal for your shell."
 readme = "README.md"
 requires-python = ">=3.11"

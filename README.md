@@ -48,7 +48,17 @@ All parsing and number-crunching lives in pure, unit-tested modules
 
 ## Install
 
-End users (isolated install via [pipx](https://pipx.pypa.io/)):
+From PyPI (recommended):
+
+```bash
+pipx install bbterm-tui     # or: pip install bbterm-tui
+```
+
+The installed command and import name are `bbterm` (only the PyPI package is
+named `bbterm-tui`). To enable the Databento provider: `pipx install "bbterm-tui[databento]"`.
+
+To install the latest unreleased `main` instead, via
+[pipx](https://pipx.pypa.io/):
 
 ```bash
 pipx install git+https://github.com/sgjlee0520/bbterm.git

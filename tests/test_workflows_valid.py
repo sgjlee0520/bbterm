@@ -26,3 +26,8 @@ def test_testpypi_workflow_is_manual():
     wf = _load("testpypi.yml")
     triggers = wf.get(True, wf.get("on"))
     assert "workflow_dispatch" in triggers
+
+
+def test_release_workflow_has_pypi_publish_job():
+    wf = _load("release.yml")
+    assert "pypi" in wf["jobs"]

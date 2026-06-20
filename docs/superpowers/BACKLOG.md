@@ -7,10 +7,11 @@ Ordered list of remaining work. Top = next. Shipped phases are recorded in
 - Phases 1–4: charts, watchlist, DES stats, FA fundamentals, FIL filings.
 - Packaging Phase 1: public OSS release, AGPL, pipx (`v0.1.0`).
 - Packaging Phase 2: PyPI publish as `bbterm-tui` (`v0.1.1`).
+- News feed: per-symbol headlines via Google News RSS (`N` command), merged to
+  `main` 2026-06-20 (PR #3).
 
 ## Next
-1. **News feed** — in design now.
-2. **Private advanced fork** — strategic, later.
+1. **Private advanced fork** — strategic, later.
 
 ## Deferred (do last, after everything above)
 3. **Homebrew tap** — `brew install bbterm` on Apple Silicon macOS.

@@ -46,3 +46,8 @@ def test_fa_parses_to_show_fundamentals():
 
 def test_fil_parses_to_show_filings():
     assert isinstance(parse_command("FIL"), ShowFilings)
+
+
+def test_n_parses_to_show_news():
+    from bbterm.commands import ShowNews
+    assert isinstance(parse_command("N"), ShowNews)

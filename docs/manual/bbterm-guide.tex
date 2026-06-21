@@ -14,18 +14,40 @@
 
 \section{What bbterm is}
 bbterm is a market terminal you run in your own terminal window. It shows price
-charts, a watchlist of symbols you follow, and a statistics panel. Market data
-comes from Databento and is cached locally in a small database, so the app is
-fast, works offline once data is fetched, and costs almost nothing to run.
+charts, a watchlist of symbols you follow, a statistics panel, company
+fundamentals and filings, news headlines, and even congressional stock trades.
+Most data comes from free sources --- Yahoo Finance (for prices) and the U.S.
+Securities and Exchange Commission's EDGAR system (for fundamentals and filings)
+--- and is cached locally in a small database, so the app is fast, works offline
+once data is fetched, and costs almost nothing to run.
 
-\section{Starting the app}
-From the project folder:
+\section{Installing and starting the app}
+The easiest way to install is with \texttt{pipx} (which requires Python 3.12 or
+newer):
 \begin{Verbatim}[frame=single]
-.venv/bin/bbterm-sync     # one-time/daily: download recent daily prices
-.venv/bin/bbterm          # launch the terminal
+pipx install bbterm-tui      # the command is still called "bbterm"
+bbterm                       # launch the terminal
 \end{Verbatim}
-The first time, set your Databento key in your shell (\texttt{DATABENTO\_API\_KEY}).
-Without it, bbterm still runs using a free fallback data source.
+If you are working from a clone of the source instead, run \texttt{bbterm} from
+the project's virtual environment (\texttt{.venv/bin/bbterm}).
+
+bbterm runs on free data out of the box --- no keys required. Two optional keys
+unlock extra features, set as environment variables (or in a \texttt{.env} file
+in the folder you run bbterm from):
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Variable & Unlocks \\
+\midrule
+\texttt{DATABENTO\_API\_KEY} & Higher-quality price history from Databento \\
+\texttt{LAMBDA\_API\_KEY} & Congressional trades (the \texttt{POL} view) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Best experience:} run bbterm in an image-capable terminal such as
+\textbf{iTerm2}, where the price chart is drawn as a crisp picture. In a plain
+terminal, bbterm automatically falls back to a text chart.
 
 \section{The screen}
 \begin{Verbatim}[frame=single]
@@ -33,16 +55,16 @@ Without it, bbterm still runs using a free fallback data source.
 | : AAPL_                          (command)   |  <- command bar (top)
 +----------+-----------------------------------+
 | WATCHLIST|  AAPL  291.52  -6.48 (-2.18%)     |
-| SPY  ... |  [ chart  OR  statistics ]        |  <- main panel
-| AAPL ... |                                   |
+| SPY  ... |  [ chart / stats / FA / FIL /     |  <- main panel
+| AAPL ... |    news / congress ]              |
 +----------+-----------------------------------+
 | SPY .. | QQQ .. | AAPL ..  (ticker strip)    |
-| [GP]chart [DES]stats [c]line  q  ?=help      |  <- footer
+| [GP]chart [DES]stats [FA][FIL][N][POL] ?=help|  <- footer
 +----------------------------------------------+
 \end{Verbatim}
 \textbf{Watchlist} (left): the symbols you follow, each with price and percent
-change. \textbf{Main panel} (right): either the price chart or the statistics
-view. \textbf{Ticker strip} (bottom): a compact running line of your watchlist.
+change. \textbf{Main panel} (right): whichever view you have chosen. \textbf{Ticker
+strip} (bottom): a compact running line of your watchlist.
 
 \section{The command bar and the colon key}
 The command bar is one line at the top where you type instructions instead of
@@ -65,10 +87,16 @@ Type this & What happens \\
 \texttt{DES} & Show the statistics panel \\
 \texttt{FA} & Show company fundamentals (from SEC EDGAR) \\
 \texttt{FIL} & Show recent SEC filings \\
+\texttt{N} & Show recent news headlines \\
+\texttt{POL} & Show congressional trades for this stock \\
 \texttt{?} or \texttt{HELP} & Show a reminder of the commands \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+\textbf{Ticker tip:} for ``Class B''-style symbols, use a hyphen, not a dot ---
+for example Berkshire Hathaway Class B is \texttt{BRK-B} (typing \texttt{BRKB} or
+\texttt{BRK.B} returns no data on the free source).
 
 \section{Keyboard shortcuts}
 These work when the command bar is \emph{not} focused.
@@ -79,7 +107,6 @@ Key & Action \\
 \midrule
 \texttt{:} & Focus the command bar \\
 \texttt{1}--\texttt{6} & Time range: 1D, 5D, 1M, 6M, 1Y, 5Y \\
-\texttt{c} & Toggle candlestick / line chart \\
 \texttt{r} & Refresh data \\
 \texttt{q} & Quit \\
 \bottomrule
@@ -87,19 +114,47 @@ Key & Action \\
 \end{center}
 
 \section{Reading the chart}
-In candlestick mode, each candle is one time period. The thick body spans the
-open and close prices; a green body means the price rose, red means it fell. The
-thin lines (wicks) above and below show the highest and lowest prices reached.
-The bars in the smaller panel below show trading volume. Press \texttt{c} for a
-simpler line of closing prices instead.
+The price chart (\texttt{GP}) is a candlestick chart. Each candle is one time
+period: the thick body spans the open and close prices --- green if the price
+rose, red if it fell --- and the thin lines (wicks) above and below show the
+highest and lowest prices reached. The smaller panel beneath shows trading
+volume. Use the number keys \texttt{1}--\texttt{6} to change the time range. In an
+image-capable terminal (such as iTerm2) the chart is a sharp picture; elsewhere
+it is drawn with text characters.
 
 \section{Fundamentals and filings (FA / FIL)}
 Type \texttt{FA} to see headline financials --- revenue, net income, earnings
 per share, assets, and more --- with each figure's fiscal year and its change
 versus the prior year. Type \texttt{FIL} to see the company's most recent filings
 with the U.S. Securities and Exchange Commission (annual 10-K, quarterly 10-Q,
-and event-driven 8-K reports), each with the date and a link. This data comes
-from SEC EDGAR, is free and public, and is cached on your machine for a day.
+and event-driven 8-K reports). The filings view is a list: use the up and down
+arrow keys to highlight a filing and press \texttt{Enter} to open it in your web
+browser. This data comes from SEC EDGAR, is free and public, and is cached on
+your machine for a day.
+
+\section{News (N)}
+Type \texttt{N} to see recent news headlines for the loaded symbol, each with its
+source, how long ago it was published, and a link to the article. Headlines come
+from a free news feed and are cached briefly so the view stays fast. (To open an
+article, copy its link.)
+
+\section{Congressional trades (POL)}
+Type \texttt{POL} to see recent stock trades in the loaded symbol made by a
+curated list of well-known members of Congress (such as Nancy Pelosi). For each
+person you get a short summary --- how many buys, how many sells, and an estimated
+net dollar amount --- followed by the individual disclosed trades.
+
+A few honest limits to keep in mind:
+\begin{itemize}
+  \item This uses official congressional disclosures, which report \emph{dollar
+  ranges} (for example ``\$15,001 -- \$50,000''), never exact share counts.
+  \item It shows \emph{trades} (buys and sells), not a person's current holdings.
+  \item It covers \emph{members of Congress only} --- not the President, the Vice
+  President, their families, or private individuals, who do not file these
+  reports.
+\end{itemize}
+This view needs a free \texttt{LAMBDA\_API\_KEY}; without one, bbterm shows a short
+note telling you how to enable it.
 
 \section{Reading the statistics panel (DES)}
 \begin{center}

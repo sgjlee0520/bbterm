@@ -56,6 +56,13 @@ class Store:
             )
             """
         )
+        self._con.execute(
+            """
+            CREATE TABLE IF NOT EXISTS congress_trades (
+                symbol VARCHAR PRIMARY KEY, fetched_at TIMESTAMP, json VARCHAR
+            )
+            """
+        )
 
     def upsert_bars(self, bars: list[Bar]) -> None:
         if not bars:
@@ -125,6 +132,12 @@ class Store:
 
     def set_news(self, symbol: str, text: str) -> None:
         self._set_edgar("news", symbol, text)
+
+    def get_congress(self, symbol: str) -> tuple[datetime, str] | None:
+        return self._get_edgar("congress_trades", symbol)
+
+    def set_congress(self, symbol: str, text: str) -> None:
+        self._set_edgar("congress_trades", symbol, text)
 
     def _get_edgar(self, table: str, symbol: str) -> tuple[datetime, str] | None:
         row = self._con.execute(

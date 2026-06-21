@@ -38,11 +38,19 @@ class FakeNews:
         )
 
 
+class FakeCongress:
+    name = "lambdafin"
+
+    def get_congress_trades(self, symbol, days=730):
+        return {"trades": [], "count": 0, "days": 730}
+
+
 def _app():
     bars = make_bars("SPY", "1d", start=datetime.now() - timedelta(days=400), n=300)
     fake = FakeProvider(bars=bars, quote=Quote("SPY", 101.0, 100.0))
     service = DataService(Store(":memory:"), fake, fake, fetch_ttl=0.0,
-                          edgar_provider=FakeEdgar(), news_provider=FakeNews())
+                          edgar_provider=FakeEdgar(), news_provider=FakeNews(),
+                          congress_provider=FakeCongress())
     return BloombergApp(service=service, watchlist=["SPY"]), service
 
 
@@ -105,3 +113,10 @@ async def test_n_switches_to_news_view():
     async with app.run_test() as pilot:
         await _submit(pilot, app, "N")
         assert app.query_one(ContentSwitcher).current == "news"
+
+
+async def test_pol_switches_to_politicians_view():
+    app, _ = _app()
+    async with app.run_test() as pilot:
+        await _submit(pilot, app, "POL")
+        assert app.query_one(ContentSwitcher).current == "politicians"

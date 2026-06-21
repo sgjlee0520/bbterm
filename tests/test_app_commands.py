@@ -120,3 +120,10 @@ async def test_pol_switches_to_politicians_view():
     async with app.run_test() as pilot:
         await _submit(pilot, app, "POL")
         assert app.query_one(ContentSwitcher).current == "politicians"
+
+
+async def test_mf_switches_to_magic_view():
+    app, _ = _app()
+    async with app.run_test() as pilot:
+        await _submit(pilot, app, "MF")
+        assert app.query_one(ContentSwitcher).current == "magic"

@@ -1,59 +1,70 @@
 # Politician Trades — Congressional Buy/Sell for a Symbol (`POL`)
 
 **Date:** 2026-06-20
-**Status:** Approved (brainstorming, 2026-06-20)
+**Status:** Approved (brainstorming, 2026-06-20). Data source **Lambda Finance**,
+confirmed working on the free tier via a live test (see below).
 **Builds on:** the EDGAR/news provider→cache→pure-parser→view→command pattern.
 
 ## Goal
 
 Add a **`POL`** command that shows, for the currently-loaded stock, recent
 **buy/sell trades by a curated list of politicians**, plus a derived per-politician
-**net-activity summary**. Data comes from **Finnhub's congressional-trading API**.
+**net-activity summary**. Data comes from **Lambda Finance's congressional API**.
 
 ## Data-reality constraints (locked during brainstorming)
 
-- The only structured source of politician trades is **Congressional STOCK Act
-  disclosures**. This covers **members of Congress only**.
-- **Trump family: excluded** — not in Congress, no disclosure data exists anywhere.
-- **JD Vance: historical only** — his Senate-era trades (through early 2025) are in
-  the data; nothing since he became VP.
-- **Share counts do not exist** in disclosures — amounts are **dollar ranges**
-  (e.g. `$15,001–$50,000`). "How many shares" is unanswerable by any source.
-- **Current holdings** come from a *different* (annual) filing not in Finnhub's free
-  feed; out of scope. We derive a **net-activity estimate** from the transactions
-  instead, clearly labeled approximate.
+- Source = **Congressional STOCK Act disclosures**; covers **members of Congress
+  only**.
+- **Trump family: excluded** — not in Congress; no disclosure data exists.
+- **JD Vance: historical only** — Senate trades through early 2025; he's now VP and
+  files nothing. His trades are >1 year old and may fall outside the query window,
+  so he will rarely/never appear. Kept on the roster but flagged.
+- **Share counts do not exist** — amounts are **dollar ranges** (e.g.
+  `$15,001 - $50,000`). "How many shares" is unanswerable.
+- **Current holdings** are a separate annual filing not in this feed; out of scope.
+  We derive a **net-activity estimate** from the transactions, labeled approximate.
 
-## Source
+## Source — Lambda Finance (live-test confirmed)
 
-**Finnhub** congressional-trading endpoint, queried by symbol:
-`https://finnhub.io/api/v1/stock/congressional-trading?symbol={SYMBOL}&token={KEY}`
+```
+GET https://www.lambdafin.com/api/congressional/recent?ticker={SYMBOL}&days={DAYS}
+Headers: Authorization: Bearer {LAMBDA_API_KEY}
+         User-Agent: <a normal browser UA>     # REQUIRED — Cloudflare blocks Python's default UA (error 1010)
+         Accept: application/json
+```
 
-- Requires a **free Finnhub API key**, read from env **`FINNHUB_API_KEY`** (optional,
-  exactly like `DATABENTO_API_KEY`). No key → the view shows a "set FINNHUB_API_KEY
-  to enable politician trades" notice; nothing crashes.
-- **Live-test gate (de-risk):** before building the feature, a smoke script hits the
-  live endpoint with the user's key for a known active ticker and prints the raw
-  records. This confirms (a) the endpoint is on the free tier and (b) the **exact
-  field names**, which the parser is then written against. If it's premium/empty,
-  we pivot before investing. This is the first plan task and gates the rest.
+- **Key:** free Lambda account (100 requests/month), read from env
+  **`LAMBDA_API_KEY`** (optional, like `DATABENTO_API_KEY`). No key → the view shows
+  a "set LAMBDA_API_KEY to enable politician trades" notice; nothing crashes.
+- **`days`:** the endpoint defaults to 30 days; we request **`days=730`** for a
+  2-year history. (Free tier allows it; we cache to respect the 100/month quota.)
+- **Response shape (confirmed):**
+  `{"trades": [ {...}, ... ], "count": N, "days": 730}`.
+- **Per-trade fields (confirmed):** `symbol`, `representative` (name),
+  `transactionDate` (YYYY-MM-DD), `disclosureDate`, `type` (`Purchase` / `Sale` /
+  `Sale (Partial)` / `Exchange` …), `amount` (range string `"$1,001 - $15,000"`),
+  `owner` (`Self`/`Spouse`), `chamber` (`house`/`senate`), `party`, `state`,
+  `district`, `ptrLink`, `assetDescription`.
 
-### Expected response shape (to be confirmed by the live test)
+### Live test result (2026-06-20)
 
-Roughly `{"symbol": "AAPL", "data": [ {name, transactionDate, transactionType,
-amountFrom, amountTo, ...}, ... ]}`. The parser's exact field reads are finalized
-from the live-test output.
+`ticker=NVDA&days=365` → 200, 36 trades, both chambers; roster members **Gilbert
+Cisneros** and **Jefferson Shreve** present. The de-risk gate is **passed**; the
+fields above are real, not guessed.
 
 ## Curated roster
 
-A constant list in `data/congress.py` (editable):
+A constant in `data/congress.py` (editable). Lambda uses full legal names, so the
+roster stores those and matching is tolerant of first-name variants:
 
 ```
 Nancy Pelosi, Jim Justice, Jefferson Shreve, Rick Scott, Mark Warner,
-Pete Ricketts, Darrell Issa, Michael McCaul, Ro Khanna, Gil Cisneros, JD Vance
+Pete Ricketts, Darrell Issa, Michael McCaul, Ro Khanna, Gilbert Cisneros (Gil),
+JD Vance (historical)
 ```
 
-The view shows **only** trades by people on this roster (Finnhub returns all of
-Congress for the ticker; we filter down).
+The view shows **only** roster members (Lambda returns all of Congress for the
+ticker; we filter down).
 
 ## Data layer
 
@@ -62,37 +73,40 @@ Congress for the ticker; we filter down).
 ```python
 @dataclass(frozen=True)
 class CongressTrade:
-    politician: str       # "Nancy Pelosi"
+    politician: str       # "Gilbert Cisneros"
+    chamber: str          # "house" | "senate"
     side: str             # "BUY" | "SELL"
-    amount_low: float     # 15001
-    amount_high: float    # 50000
-    date: date            # transaction date
+    amount_low: float     # 15001.0
+    amount_high: float    # 50000.0
+    date: date            # transactionDate
 ```
 
-### Provider (`data/providers/finnhub_.py`)
+### Provider (`data/providers/lambdafin_.py`)
 
 `CongressProvider` mirrors `EdgarProvider`: stdlib `urllib`, **injectable fetcher**
 so tests use no network.
-- `name = "finnhub"`; constructed with the API key.
-- `get_congress_trades(symbol) -> dict` returns the **raw JSON**.
+- `name = "lambdafin"`; constructed with the API key.
+- Sends the Bearer header **and a browser User-Agent** (required).
+- `get_congress_trades(symbol, days=730) -> dict` returns the **raw JSON**.
 
 ### Pure logic (`data/congress.py`) — zero I/O, unit-tested
 
-- `CONGRESS_ROSTER: list[str]` — the curated names.
-- `parse_congress_trades(json) -> list[CongressTrade]` — flatten Finnhub's `data`
-  array; map transactionType (`Purchase`→`BUY`, `Sale`/`Sale (partial)`→`SELL`);
-  parse dates and amount range. Unknown/other types are skipped.
+- `CONGRESS_ROSTER: list[str]` — curated full names.
+- `_parse_amount(s) -> tuple[float, float]` — `"$15,001 - $50,000"` →
+  `(15001.0, 50000.0)`; a single value or unparseable → `(0.0, 0.0)`.
+- `parse_congress_trades(json) -> list[CongressTrade]` — read the `trades` array;
+  map `type` (`Purchase`→`BUY`, anything starting `Sale`→`SELL`; skip others like
+  `Exchange`); parse `amount`, `transactionDate`, `chamber`, `representative`.
 - `filter_to_roster(trades, roster=CONGRESS_ROSTER) -> list[CongressTrade]` —
-  case-insensitive name match (normalize, match on the roster name appearing in the
-  Finnhub name, handling `Last, First` ordering). Newest first.
-- `summarize(trades) -> list[PoliticianSummary]` where
-  `PoliticianSummary(politician, n_buys, n_sells, net_estimate)` and
-  `net_estimate = Σ midpoint(buys) − Σ midpoint(sells)` using
-  `midpoint = (amount_low + amount_high) / 2`. Labeled approximate in the UI.
+  match on **last name + first-name prefix** (so roster `Gil Cisneros` matches
+  `Gilbert Cisneros`; `Nancy Pelosi` matches `Nancy Pelosi`), case-insensitive.
+  Newest first.
+- `summarize(trades) -> list[PoliticianSummary]` with
+  `PoliticianSummary(politician, n_buys, n_sells, net_estimate)` where
+  `net_estimate = Σ midpoint(buys) − Σ midpoint(sells)`,
+  `midpoint = (amount_low + amount_high)/2`. Labeled approximate in the UI.
 
 ### Store (`data/store.py`)
-
-Cache table mirroring the EDGAR/news tables:
 
 ```sql
 CREATE TABLE IF NOT EXISTS congress_trades (symbol VARCHAR PRIMARY KEY, fetched_at TIMESTAMP, json VARCHAR);
@@ -103,14 +117,15 @@ CREATE TABLE IF NOT EXISTS congress_trades (symbol VARCHAR PRIMARY KEY, fetched_
 ### Service (`data/service.py`)
 
 `get_congress_trades(symbol) -> list[CongressTrade]`:
-- Cache-through, **24h TTL** (`CONGRESS_TTL_SECONDS = 86400.0`), degrade to cache
-  on failure, `[]` when nothing cached, like `get_news`.
-- If no `finnhub_api_key` configured → return `[]` (the view shows the key notice).
+- Cache-through, **24h TTL** (`CONGRESS_TTL_SECONDS = 86400.0`), degrade to cache on
+  failure, `[]` when nothing cached — like `get_news`. The long cache also protects
+  the 100/month Lambda quota.
+- No `lambda_api_key` configured → return `[]` (view shows the key notice).
 - Returns roster-filtered, newest-first trades.
 
 ### Config (`config.py`)
 
-Add `finnhub_api_key: str | None` from `FINNHUB_API_KEY`.
+Add `lambda_api_key: str | None` from `LAMBDA_API_KEY`.
 
 ## UI
 
@@ -120,12 +135,13 @@ Add `ShowPoliticians`; verb **`POL`** → `ShowPoliticians`. Unit-tested.
 
 ### Widget (`tui/widgets/politicians.py`)
 
-- `PoliticiansView(Widget)` with `.show(trades)`.
+- `PoliticiansView(Widget)` with `.show(trades, has_key)`.
 - `render_politicians_text(trades) -> str` pure helper: grouped by politician, each
-  group led by a **summary line** (`Nancy Pelosi — 3 buys · 1 sell · net ≈ +$200K (est.)`)
-  followed by that politician's trades (`BUY  $15,001–$50,000  2024-01-15`),
-  newest first. Empty → a notice: no key set → "Set FINNHUB_API_KEY…", else
-  "No congressional trades for {symbol}."
+  group led by a **summary line**
+  (`Nancy Pelosi (house) — 3 buys · 1 sell · net ≈ +$200K (est.)`) then that
+  politician's trades (`BUY   $15,001 - $50,000   2025-11-18`), newest first.
+- Empty states: no key → "Set LAMBDA_API_KEY to enable politician trades.";
+  otherwise → "No congressional trades for {symbol}."
 
 ### App (`tui/app.py`)
 
@@ -137,23 +153,24 @@ Add `ShowPoliticians`; verb **`POL`** → `ShowPoliticians`. Unit-tested.
 ## Error handling
 
 - No key → key notice, empty view, no crash.
-- HTTP/network failure → degrade to cached JSON if present, else "unavailable".
+- HTTP/network/Cloudflare failure → degrade to cached JSON if present, else
+  "unavailable".
 - Empty/odd payload → "No congressional trades for {symbol}."
 
 ## Testing (no network, no key)
 
-- `tests/fixtures/` — a trimmed real Finnhub congressional payload (from the live
-  test) with a couple roster names + a non-roster name.
-- `test_congress.py` — `parse_congress_trades` (type mapping, amounts, dates),
-  `filter_to_roster` (keeps roster, drops others, name-order handling),
-  `summarize` (buy/sell counts, net midpoint math).
+- `tests/fixtures/congress_nvda.json` — a trimmed real Lambda payload (from the live
+  test) with a couple roster names + a non-roster name + a `Sale` and a `Purchase`.
+- `test_congress.py` — `_parse_amount`, `parse_congress_trades` (type mapping,
+  amount/date), `filter_to_roster` (Gil↔Gilbert match, drops non-roster),
+  `summarize` (counts + net midpoint math).
 - `test_commands.py` — `POL` → `ShowPoliticians`.
 - `test_service_congress.py` — fake provider: parse + cache + degrade + no-key → [].
 - `test_app_commands.py` — `POL` switches the `ContentSwitcher`, fake provider.
-- `render_politicians_text` test (summary line + trade rows + notices).
-- `scripts/smoke_congress.py` — manual live check (the de-risk gate).
+- `render_politicians_text` test (summary line + trade rows + both notices).
+- `scripts/smoke_congress.py` — manual live check (reads `LAMBDA_API_KEY`).
 
 ## Out of scope
 
 Real holdings/share counts (don't exist), net-worth, non-roster politicians, trade
-alerts, executive-branch (Trump/Vance-as-VP) data.
+alerts, executive-branch (Trump / Vance-as-VP) data.

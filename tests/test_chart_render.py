@@ -13,10 +13,6 @@ def _bars(n=10):
     ]
 
 
-def test_default_mode_is_candle():
-    assert ChartPanel().mode == "candle"
-
-
 def test_build_candle_output_nonempty():
     panel = ChartPanel()
     panel._size_wh = (80, 24)  # avoid depending on a mounted layout
@@ -24,18 +20,12 @@ def test_build_candle_output_nonempty():
     assert isinstance(out, str) and out.strip() != ""
 
 
-def test_build_line_output_nonempty():
+def test_show_uses_text_when_images_unavailable(monkeypatch):
+    import bbterm.tui.widgets.chart as chart_mod
+
+    monkeypatch.setattr(chart_mod, "image_charts_available", lambda: False)
     panel = ChartPanel()
-    panel.mode = "line"
     panel._size_wh = (80, 24)
-    out = panel._build_plot("AAPL", "1 Month", _bars(), None)
-    assert isinstance(out, str) and out.strip() != ""
-
-
-def test_toggle_mode_flips():
-    panel = ChartPanel()
-    assert panel.mode == "candle"
-    panel.toggle_mode()
-    assert panel.mode == "line"
-    panel.toggle_mode()
-    assert panel.mode == "candle"
+    # _render_candle returns None (text path) when images are unavailable
+    out = panel._render_candle("AAPL", "1 Month", _bars(), Quote("AAPL", 110, 100))
+    assert out is None

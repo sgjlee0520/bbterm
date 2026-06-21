@@ -44,7 +44,7 @@ All parsing and number-crunching lives in pure, unit-tested modules
 
 ## Requirements
 
-- Python ≥ 3.11
+- Python ≥ 3.12
 - A [Databento](https://databento.com/) API key is optional — without it, bbterm
   runs on the free yfinance fallback. EDGAR needs no key.
 
@@ -106,11 +106,14 @@ bbterm          # launch the terminal
 | `:` | Focus the command bar (`Esc` / `Enter` to leave) |
 | `<ticker>` | Load a symbol |
 | `ADD <sym>` / `DEL <sym>` | Edit the watchlist (saved) |
-| `GP` / `DES` | Chart / statistics |
-| `FA` / `FIL` | Fundamentals / recent SEC filings |
-| `c` | Toggle candlestick / line chart |
+| `GP` / `DES` | Candlestick chart (crisp image in iTerm2) / statistics |
+| `FA` / `FIL` | Fundamentals / SEC filings (↑↓ select, Enter opens in browser) |
+| `N` | News headlines |
 | `1`–`6` | Time range (1D / 5D / 1M / 6M / 1Y / 5Y) |
 | `r` | Refresh · `q` Quit · `?` Help |
+
+Image charts use Sixel/Kitty terminal graphics; on terminals without image
+support, bbterm falls back to text charts automatically.
 
 A beginner-friendly guide is in `docs/manual/bbterm-guide.tex`
 (build the PDF with `pdflatex bbterm-guide.tex`).

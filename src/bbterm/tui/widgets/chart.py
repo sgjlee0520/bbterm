@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import io
+
 import plotext as plt
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import Label, Static
+from textual_image.widget import Image
 
 from bbterm.data.models import Bar, Quote
+from bbterm.tui.widgets.chart_image import image_charts_available, render_candles_png
 
 
 class ChartPanel(Widget):
@@ -17,16 +21,19 @@ class ChartPanel(Widget):
         padding: 0 1; text-style: bold;
     }
     ChartPanel > Static.plot { width: 100%; height: 1fr; }
+    ChartPanel > #chart-image { width: 100%; height: 1fr; }
     """
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.mode = "candle"  # or "line"
         self._last: tuple | None = None  # (symbol, label, bars, quote)
         self._size_wh: tuple[int, int] | None = None  # test override
 
     def compose(self) -> ComposeResult:
         yield Label("", id="chart-header", classes="header")
+        img = Image(id="chart-image")
+        img.display = False
+        yield img
         yield Static("", id="chart-plot", classes="plot")
 
     def show(
@@ -46,15 +53,34 @@ class ChartPanel(Widget):
         else:
             header.update(f"  {symbol}")
 
+        image = self.query_one("#chart-image", Image)
         if not bars:
+            image.display = False
             plot.update("  No data available for this symbol/period.")
+            plot.display = True
             return
-        plot.update(self._build_plot(symbol, period_label, bars, quote))
 
-    def toggle_mode(self) -> None:
-        self.mode = "line" if self.mode == "candle" else "candle"
-        if self._last is not None:
-            self.show(*self._last)
+        png = self._render_candle(symbol, period_label, bars, quote)
+        if png is not None:
+            # textual-image treats raw bytes as a file PATH; wrap in BytesIO so it
+            # reads the PNG data.
+            image.image = io.BytesIO(png)
+            image.display = True
+            plot.display = False
+        else:
+            plot.update(self._build_plot(symbol, period_label, bars, quote))
+            plot.display = True
+            image.display = False
+
+    def _render_candle(self, symbol, period_label, bars, quote) -> bytes | None:
+        """PNG bytes for an image candle chart, or None to use the text fallback
+        (no graphics protocol available)."""
+        if not image_charts_available():
+            return None
+        try:
+            return render_candles_png(bars, symbol, period_label)
+        except Exception:
+            return None
 
     def _dims(self) -> tuple[int, int]:
         if self._size_wh is not None:
@@ -72,13 +98,6 @@ class ChartPanel(Widget):
 
         plt.clear_figure()
         plt.theme("dark")
-
-        if self.mode == "line":
-            plt.plotsize(width, height)
-            plt.plot([b.close for b in bars], color=color, label=symbol)
-            self._apply_xticks(dates)
-            plt.title(f"{symbol} — {period_label} (line)")
-            return plt.build()
 
         # candle + volume sub-panel
         vol_h = max(height // 4, 4)
@@ -102,11 +121,3 @@ class ChartPanel(Widget):
         plt.bar(dates, [b.volume for b in bars], color=color)
         plt.title("Volume")
         return plt.build()
-
-    def _apply_xticks(self, dates: list[str]) -> None:
-        tick_count = min(6, len(dates))
-        if tick_count == 0:
-            return
-        step = max(1, len(dates) // tick_count)
-        ticks = list(range(0, len(dates), step))
-        plt.xticks(ticks, [dates[i] for i in ticks])

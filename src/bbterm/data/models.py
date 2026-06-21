@@ -79,3 +79,11 @@ class CongressTrade:
     amount_low: float
     amount_high: float
     date: date
+
+
+@dataclass(frozen=True)
+class MagicMetrics:
+    symbol: str
+    earnings_yield: float | None   # EBIT / EV
+    roc: float | None              # EBIT / tangible capital
+    ev: float | None               # enterprise value (USD)

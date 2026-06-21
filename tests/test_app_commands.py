@@ -6,7 +6,6 @@ from bbterm.data.models import Quote
 from bbterm.data.service import DataService
 from bbterm.data.store import Store
 from bbterm.tui.app import BloombergApp
-from bbterm.tui.widgets.chart import ChartPanel
 from bbterm.tui.widgets.command_bar import CommandBar
 from fakes import FakeProvider, make_bars
 
@@ -78,15 +77,6 @@ async def test_bare_ticker_loads_symbol():
     async with app.run_test() as pilot:
         await _submit(pilot, app, "AMZN")
         assert app.current_symbol == "AMZN"
-
-
-async def test_toggle_chart_mode_binding():
-    app, _ = _app()
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        assert app.query_one(ChartPanel).mode == "candle"
-        await pilot.press("c")
-        assert app.query_one(ChartPanel).mode == "line"
 
 
 async def test_cannot_remove_last_symbol():

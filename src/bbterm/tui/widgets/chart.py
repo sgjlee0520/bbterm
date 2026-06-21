@@ -26,7 +26,6 @@ class ChartPanel(Widget):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.mode = "candle"  # or "line"
         self._last: tuple | None = None  # (symbol, label, bars, quote)
         self._size_wh: tuple[int, int] | None = None  # test override
 
@@ -74,19 +73,14 @@ class ChartPanel(Widget):
             image.display = False
 
     def _render_candle(self, symbol, period_label, bars, quote) -> bytes | None:
-        """PNG bytes for an image candle chart, or None to use the text path
-        (line mode, or no graphics protocol available)."""
-        if self.mode != "candle" or not image_charts_available():
+        """PNG bytes for an image candle chart, or None to use the text fallback
+        (no graphics protocol available)."""
+        if not image_charts_available():
             return None
         try:
             return render_candles_png(bars, symbol, period_label)
         except Exception:
             return None
-
-    def toggle_mode(self) -> None:
-        self.mode = "line" if self.mode == "candle" else "candle"
-        if self._last is not None:
-            self.show(*self._last)
 
     def _dims(self) -> tuple[int, int]:
         if self._size_wh is not None:
@@ -104,13 +98,6 @@ class ChartPanel(Widget):
 
         plt.clear_figure()
         plt.theme("dark")
-
-        if self.mode == "line":
-            plt.plotsize(width, height)
-            plt.plot([b.close for b in bars], color=color, label=symbol)
-            self._apply_xticks(dates)
-            plt.title(f"{symbol} — {period_label} (line)")
-            return plt.build()
 
         # candle + volume sub-panel
         vol_h = max(height // 4, 4)
@@ -134,11 +121,3 @@ class ChartPanel(Widget):
         plt.bar(dates, [b.volume for b in bars], color=color)
         plt.title("Volume")
         return plt.build()
-
-    def _apply_xticks(self, dates: list[str]) -> None:
-        tick_count = min(6, len(dates))
-        if tick_count == 0:
-            return
-        step = max(1, len(dates) // tick_count)
-        ticks = list(range(0, len(dates), step))
-        plt.xticks(ticks, [dates[i] for i in ticks])

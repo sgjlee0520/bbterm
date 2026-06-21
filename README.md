@@ -109,7 +109,6 @@ bbterm          # launch the terminal
 | `GP` / `DES` | Candlestick chart (crisp image in iTerm2) / statistics |
 | `FA` / `FIL` | Fundamentals / SEC filings (↑↓ select, Enter opens in browser) |
 | `N` | News headlines |
-| `c` | Toggle candlestick / line chart |
 | `1`–`6` | Time range (1D / 5D / 1M / 6M / 1Y / 5Y) |
 | `r` | Refresh · `q` Quit · `?` Help |
 

@@ -40,7 +40,7 @@ PERIODS: dict[str, tuple[str, timedelta, str]] = {
 _HELP = (
     "Commands: <ticker> load · ADD <sym> · DEL <sym> · GP chart · DES stats · "
     "FA fundamentals · FIL filings (Enter opens) · N news · ? help   |   Keys: :=command 1-6=period "
-    "c=line/candle r=refresh q=quit"
+    "r=refresh q=quit"
 )
 
 
@@ -59,7 +59,6 @@ class BloombergApp(App):
         Binding("colon", "focus_command", "Command", show=False),
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
-        Binding("c", "toggle_chart", "Line/Candle"),
         Binding("1", "period('1d')", "1D"),
         Binding("2", "period('5d')", "5D"),
         Binding("3", "period('1mo')", "1M"),
@@ -200,9 +199,6 @@ class BloombergApp(App):
     def action_period(self, period: str) -> None:
         self.current_period = period
         self.load_chart()
-
-    def action_toggle_chart(self) -> None:
-        self.query_one(ChartPanel).toggle_mode()
 
     # ---- workers -----------------------------------------------------------
     async def _bars_for(self, interval: str, delta: timedelta):

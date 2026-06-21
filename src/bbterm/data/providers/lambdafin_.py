@@ -25,7 +25,7 @@ class CongressProvider:
         self._key = api_key
         self._open = opener or _http_get
 
-    def get_congress_trades(self, symbol: str, days: int = 730) -> dict:
+    def get_congress_trades(self, symbol: str, days: int = 365) -> dict:
         url = f"{_BASE}?ticker={urllib.parse.quote(symbol)}&days={days}"
         headers = {
             "Authorization": f"Bearer {self._key}",

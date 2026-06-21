@@ -12,7 +12,8 @@ from textual.widgets import ContentSwitcher, Footer, Header
 from bbterm import __version__
 from bbterm.commands import (
     AddSymbol, Help, LoadSymbol, RemoveSymbol, ShowChart, ShowFilings,
-    ShowFundamentals, ShowNews, ShowPoliticians, ShowStats, Unknown, parse_command,
+    ShowFundamentals, ShowMagic, ShowNews, ShowPoliticians, ShowStats, Unknown,
+    parse_command,
 )
 from bbterm.config import load_config
 from bbterm.data import build_service
@@ -23,6 +24,8 @@ from bbterm.tui.widgets.chart import ChartPanel
 from bbterm.tui.widgets.command_bar import CommandBar
 from bbterm.tui.widgets.filings import FilingsView
 from bbterm.tui.widgets.fundamentals import FundamentalsView
+from bbterm.data.magic_formula import rank_magic
+from bbterm.tui.widgets.magic import MagicFormulaView
 from bbterm.tui.widgets.news import NewsView
 from bbterm.tui.widgets.politicians import PoliticiansView
 from bbterm.tui.widgets.stats import StatsView
@@ -40,7 +43,7 @@ PERIODS: dict[str, tuple[str, timedelta, str]] = {
 
 _HELP = (
     "Commands: <ticker> load · ADD <sym> · DEL <sym> · GP chart · DES stats · "
-    "FA fundamentals · FIL filings (Enter opens) · N news · POL congress · ? help   |   Keys: :=command 1-6=period "
+    "FA fundamentals · FIL filings (Enter opens) · N news · POL congress · MF magic · ? help   |   Keys: :=command 1-6=period "
     "r=refresh q=quit"
 )
 
@@ -91,6 +94,7 @@ class BloombergApp(App):
                 yield FilingsView(id="filings")
                 yield NewsView(id="news")
                 yield PoliticiansView(id="politicians")
+                yield MagicFormulaView(id="magic")
         yield TickerStrip()
         yield Footer()
 
@@ -148,6 +152,9 @@ class BloombergApp(App):
         elif isinstance(command, ShowPoliticians):
             self.query_one("#switcher", ContentSwitcher).current = "politicians"
             self.load_politicians()
+        elif isinstance(command, ShowMagic):
+            self.query_one("#switcher", ContentSwitcher).current = "magic"
+            self.load_magic()
         elif isinstance(command, Help):
             self.notify(_HELP, title="Help", timeout=8)
         elif isinstance(command, Unknown):
@@ -189,6 +196,8 @@ class BloombergApp(App):
             self.load_news()
         elif current == "politicians":
             self.load_politicians()
+        elif current == "magic":
+            self.load_magic()
         else:
             self.load_chart()
 
@@ -272,6 +281,19 @@ class BloombergApp(App):
             self.notify(f"Congress data unavailable ({err})", severity="warning")
             trades = []
         self.query_one(PoliticiansView).show(trades, has_key=self.service.has_congress)
+
+    @work(exclusive=True, group="magic")
+    async def load_magic(self) -> None:
+        try:
+            current = await self.service.get_magic(self.current_symbol)
+            results = {s: await self.service.get_magic(s) for s in self.watchlist_symbols}
+        except Exception as err:
+            self.notify(f"Magic Formula unavailable ({err})", severity="warning")
+            current, results = None, {}
+        computable = [m for m in results.values() if m is not None]
+        na = [s for s, m in results.items() if m is None]
+        ranked = rank_magic(computable)
+        self.query_one(MagicFormulaView).show(self.current_symbol, current, ranked, na)
 
     @work(exclusive=True, group="quotes")
     async def load_quotes(self) -> None:

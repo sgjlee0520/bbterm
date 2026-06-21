@@ -52,6 +52,11 @@ class ShowPoliticians:
 
 
 @dataclass(frozen=True)
+class ShowMagic:
+    pass
+
+
+@dataclass(frozen=True)
 class Help:
     pass
 
@@ -89,6 +94,8 @@ def parse_command(text: str):
         return ShowNews()
     if verb == "POL":
         return ShowPoliticians()
+    if verb == "MF":
+        return ShowMagic()
     if verb in ("?", "HELP"):
         return Help()
     if arg is None and _is_symbol(verb):

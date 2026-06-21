@@ -44,7 +44,7 @@ All parsing and number-crunching lives in pure, unit-tested modules
 
 ## Requirements
 
-- Python ≥ 3.11
+- Python ≥ 3.12
 - A [Databento](https://databento.com/) API key is optional — without it, bbterm
   runs on the free yfinance fallback. EDGAR needs no key.
 

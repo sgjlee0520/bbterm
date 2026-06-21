@@ -7,8 +7,9 @@ from datetime import datetime, timedelta
 
 from bbterm.data.congress import filter_to_roster, parse_congress_trades
 from bbterm.data.fundamentals import extract_fundamentals, parse_filings
+from bbterm.data.magic_formula import compute_magic, extract_magic_inputs
 from bbterm.data.models import (
-    Bar, CongressTrade, Filing, FundamentalMetric, NewsItem, Quote,
+    Bar, CongressTrade, Filing, FundamentalMetric, MagicMetrics, NewsItem, Quote,
 )
 from bbterm.data.news import parse_news
 from bbterm.data.providers.base import BarProvider, QuoteProvider
@@ -85,7 +86,7 @@ class DataService:
         fetched_at, _ = cached
         return (datetime.now() - fetched_at).total_seconds() < EDGAR_TTL_SECONDS
 
-    async def get_fundamentals(self, symbol: str) -> list[FundamentalMetric]:
+    async def _edgar_facts(self, symbol: str) -> dict | None:
         cached = self.store.get_edgar_facts(symbol)
         if not self._edgar_fresh(cached):
             try:
@@ -93,10 +94,29 @@ class DataService:
                 self.store.set_edgar_facts(symbol, json.dumps(facts))
                 cached = self.store.get_edgar_facts(symbol)
             except Exception:
-                if cached is None:
-                    raise
+                pass
+        if cached is None:
+            return None
         _, payload = cached
-        return extract_fundamentals(json.loads(payload))
+        return json.loads(payload)
+
+    async def get_fundamentals(self, symbol: str) -> list[FundamentalMetric]:
+        facts = await self._edgar_facts(symbol)
+        if facts is None:
+            return []
+        return extract_fundamentals(facts)
+
+    async def get_magic(self, symbol: str) -> MagicMetrics | None:
+        facts = await self._edgar_facts(symbol)
+        if facts is None:
+            return None
+        inputs = extract_magic_inputs(facts)
+        if inputs is None:
+            return None
+        quote = await self.get_quote(symbol)
+        if quote is None or quote.price is None:
+            return None
+        return compute_magic(symbol, inputs, quote.price)
 
     async def get_filings(self, symbol: str) -> list[Filing]:
         cached = self.store.get_edgar_filings(symbol)

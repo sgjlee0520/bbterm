@@ -5,8 +5,11 @@ import json
 import time
 from datetime import datetime, timedelta
 
+from bbterm.data.congress import filter_to_roster, parse_congress_trades
 from bbterm.data.fundamentals import extract_fundamentals, parse_filings
-from bbterm.data.models import Bar, Filing, FundamentalMetric, NewsItem, Quote
+from bbterm.data.models import (
+    Bar, CongressTrade, Filing, FundamentalMetric, NewsItem, Quote,
+)
 from bbterm.data.news import parse_news
 from bbterm.data.providers.base import BarProvider, QuoteProvider
 from bbterm.data.store import Store
@@ -14,6 +17,7 @@ from bbterm.data.store import Store
 FETCH_TTL_SECONDS = 300.0
 EDGAR_TTL_SECONDS = 86400.0
 NEWS_TTL_SECONDS = 900.0
+CONGRESS_TTL_SECONDS = 86400.0
 
 
 def _step(interval: str) -> timedelta:
@@ -29,6 +33,7 @@ class DataService:
         fetch_ttl: float = FETCH_TTL_SECONDS,
         edgar_provider=None,
         news_provider=None,
+        congress_provider=None,
     ) -> None:
         self.store = store
         self._bars = bar_provider
@@ -36,6 +41,7 @@ class DataService:
         self._ttl = fetch_ttl
         self._edgar = edgar_provider
         self._news = news_provider
+        self._congress = congress_provider
         self._last_fetch: dict[tuple[str, str], float] = {}
 
     async def get_bars(
@@ -125,3 +131,30 @@ class DataService:
             return []
         _, payload = cached
         return parse_news(payload)
+
+    # ---- congressional trades ---------------------------------------------
+    @property
+    def has_congress(self) -> bool:
+        return self._congress is not None
+
+    def _congress_fresh(self, cached) -> bool:
+        if cached is None:
+            return False
+        fetched_at, _ = cached
+        return (datetime.now() - fetched_at).total_seconds() < CONGRESS_TTL_SECONDS
+
+    async def get_congress_trades(self, symbol: str) -> list[CongressTrade]:
+        if self._congress is None:
+            return []
+        cached = self.store.get_congress(symbol)
+        if not self._congress_fresh(cached):
+            try:
+                raw = await asyncio.to_thread(self._congress.get_congress_trades, symbol)
+                self.store.set_congress(symbol, json.dumps(raw))
+                cached = self.store.get_congress(symbol)
+            except Exception:
+                pass
+        if cached is None:
+            return []
+        _, payload = cached
+        return filter_to_roster(parse_congress_trades(json.loads(payload)))

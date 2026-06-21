@@ -11,6 +11,7 @@ class Config:
     db_path: Path
     cost_cap_usd: float
     databento_dataset: str
+    lambda_api_key: str | None = None
 
 
 def _load_dotenv(path: Path) -> dict[str, str]:
@@ -34,4 +35,5 @@ def load_config(root: Path | None = None) -> Config:
         db_path=Path(env.get("BBTERM_DB_PATH", str(root / "data" / "market.duckdb"))),
         cost_cap_usd=float(env.get("BBTERM_COST_CAP_USD", "1.0")),
         databento_dataset=env.get("BBTERM_DATASET", "EQUS.MINI"),
+        lambda_api_key=env.get("LAMBDA_API_KEY"),
     )

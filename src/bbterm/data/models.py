@@ -69,3 +69,13 @@ class NewsItem:
     source: str
     published: datetime | None
     url: str
+
+
+@dataclass(frozen=True)
+class CongressTrade:
+    politician: str
+    chamber: str          # "house" | "senate"
+    side: str             # "BUY" | "SELL"
+    amount_low: float
+    amount_high: float
+    date: date

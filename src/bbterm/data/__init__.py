@@ -4,6 +4,7 @@ import sys
 
 from bbterm.config import Config
 from bbterm.data.providers.edgar import EdgarProvider
+from bbterm.data.providers.lambdafin_ import CongressProvider
 from bbterm.data.providers.news import NewsProvider
 from bbterm.data.providers.yfinance_ import YFinanceProvider
 from bbterm.data.service import DataService
@@ -15,6 +16,10 @@ def build_service(config: Config) -> DataService:
     yf_provider = YFinanceProvider()
     edgar = EdgarProvider()
     news = NewsProvider()
+    congress = (
+        CongressProvider(api_key=config.lambda_api_key)
+        if config.lambda_api_key else None
+    )
     if config.databento_api_key:
         try:
             from bbterm.data.providers.databento_ import DatabentoProvider
@@ -31,5 +36,5 @@ def build_service(config: Config) -> DataService:
                 dataset=config.databento_dataset,
                 cost_cap_usd=config.cost_cap_usd,
             )
-            return DataService(store, bars, yf_provider, edgar_provider=edgar, news_provider=news)
-    return DataService(store, yf_provider, yf_provider, edgar_provider=edgar, news_provider=news)
+            return DataService(store, bars, yf_provider, edgar_provider=edgar, news_provider=news, congress_provider=congress)
+    return DataService(store, yf_provider, yf_provider, edgar_provider=edgar, news_provider=news, congress_provider=congress)

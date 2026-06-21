@@ -12,7 +12,7 @@ from textual.widgets import ContentSwitcher, Footer, Header
 from bbterm import __version__
 from bbterm.commands import (
     AddSymbol, Help, LoadSymbol, RemoveSymbol, ShowChart, ShowFilings,
-    ShowFundamentals, ShowNews, ShowStats, Unknown, parse_command,
+    ShowFundamentals, ShowNews, ShowPoliticians, ShowStats, Unknown, parse_command,
 )
 from bbterm.config import load_config
 from bbterm.data import build_service
@@ -24,6 +24,7 @@ from bbterm.tui.widgets.command_bar import CommandBar
 from bbterm.tui.widgets.filings import FilingsView
 from bbterm.tui.widgets.fundamentals import FundamentalsView
 from bbterm.tui.widgets.news import NewsView
+from bbterm.tui.widgets.politicians import PoliticiansView
 from bbterm.tui.widgets.stats import StatsView
 from bbterm.tui.widgets.strip import TickerStrip
 from bbterm.tui.widgets.watchlist import Watchlist
@@ -39,7 +40,7 @@ PERIODS: dict[str, tuple[str, timedelta, str]] = {
 
 _HELP = (
     "Commands: <ticker> load · ADD <sym> · DEL <sym> · GP chart · DES stats · "
-    "FA fundamentals · FIL filings (Enter opens) · N news · ? help   |   Keys: :=command 1-6=period "
+    "FA fundamentals · FIL filings (Enter opens) · N news · POL congress · ? help   |   Keys: :=command 1-6=period "
     "r=refresh q=quit"
 )
 
@@ -89,6 +90,7 @@ class BloombergApp(App):
                 yield FundamentalsView(id="fundamentals")
                 yield FilingsView(id="filings")
                 yield NewsView(id="news")
+                yield PoliticiansView(id="politicians")
         yield TickerStrip()
         yield Footer()
 
@@ -143,6 +145,9 @@ class BloombergApp(App):
         elif isinstance(command, ShowNews):
             self.query_one("#switcher", ContentSwitcher).current = "news"
             self.load_news()
+        elif isinstance(command, ShowPoliticians):
+            self.query_one("#switcher", ContentSwitcher).current = "politicians"
+            self.load_politicians()
         elif isinstance(command, Help):
             self.notify(_HELP, title="Help", timeout=8)
         elif isinstance(command, Unknown):
@@ -182,6 +187,8 @@ class BloombergApp(App):
             self.load_filings()
         elif current == "news":
             self.load_news()
+        elif current == "politicians":
+            self.load_politicians()
         else:
             self.load_chart()
 
@@ -256,6 +263,15 @@ class BloombergApp(App):
             self.notify(f"News unavailable ({err})", severity="warning")
             items = []
         self.query_one(NewsView).show(items)
+
+    @work(exclusive=True, group="politicians")
+    async def load_politicians(self) -> None:
+        try:
+            trades = await self.service.get_congress_trades(self.current_symbol)
+        except Exception as err:
+            self.notify(f"Congress data unavailable ({err})", severity="warning")
+            trades = []
+        self.query_one(PoliticiansView).show(trades, has_key=self.service.has_congress)
 
     @work(exclusive=True, group="quotes")
     async def load_quotes(self) -> None:

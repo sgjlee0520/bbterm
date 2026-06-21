@@ -51,3 +51,8 @@ def test_fil_parses_to_show_filings():
 def test_n_parses_to_show_news():
     from bbterm.commands import ShowNews
     assert isinstance(parse_command("N"), ShowNews)
+
+
+def test_pol_parses_to_show_politicians():
+    from bbterm.commands import ShowPoliticians
+    assert isinstance(parse_command("POL"), ShowPoliticians)

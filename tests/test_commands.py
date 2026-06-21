@@ -56,3 +56,8 @@ def test_n_parses_to_show_news():
 def test_pol_parses_to_show_politicians():
     from bbterm.commands import ShowPoliticians
     assert isinstance(parse_command("POL"), ShowPoliticians)
+
+
+def test_mf_parses_to_show_magic():
+    from bbterm.commands import ShowMagic
+    assert isinstance(parse_command("MF"), ShowMagic)

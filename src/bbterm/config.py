@@ -27,12 +27,24 @@ def _load_dotenv(path: Path) -> dict[str, str]:
     return values
 
 
+def _xdg_dir(var: str, default_subdir: str) -> Path:
+    base = os.environ.get(var)
+    root = Path(base) if base else Path.home() / default_subdir
+    return root / "bbterm"
+
+
 def load_config(root: Path | None = None) -> Config:
     root = root or Path.cwd()
-    env = {**_load_dotenv(root / ".env"), **os.environ}
+    config_dir = _xdg_dir("XDG_CONFIG_HOME", ".config")
+    data_dir = _xdg_dir("XDG_DATA_HOME", ".local/share")
+    env = {
+        **_load_dotenv(root / ".env"),            # cwd (dev fallback, lowest)
+        **_load_dotenv(config_dir / ".env"),      # ~/.config/bbterm/.env
+        **os.environ,                             # exported vars (highest)
+    }
     return Config(
         databento_api_key=env.get("DATABENTO_API_KEY"),
-        db_path=Path(env.get("BBTERM_DB_PATH", str(root / "data" / "market.duckdb"))),
+        db_path=Path(env.get("BBTERM_DB_PATH", str(data_dir / "market.duckdb"))),
         cost_cap_usd=float(env.get("BBTERM_COST_CAP_USD", "1.0")),
         databento_dataset=env.get("BBTERM_DATASET", "EQUS.MINI"),
         lambda_api_key=env.get("LAMBDA_API_KEY"),
